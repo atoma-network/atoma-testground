@@ -8,6 +8,28 @@ This repository contains an end to end test dev environment for the Atoma Networ
 Ideally in the future this can be used to run performance benchmarks for the Atoma Network across various network conditions.
 
 
+## Architecture
+
+```mermaid
+flowchart TD
+ subgraph subGraph0["Local Dev/CI Environment"]
+        AtomaProxy["Atoma Proxy Node"]
+        AtomaNode["Atoma Node"]
+        vLLMService["vLLM Service"]
+  end
+    Client["Client"] -- HTTP Request --> AtomaProxy
+    AtomaProxy -- Forward Request --> AtomaNode
+    AtomaNode -- Model Selection --> HuggingFace["HF Token Registry"]
+    AtomaNode -- vLLM Request --> vLLMService
+    vLLMService -- Token Stream --> AtomaNode
+    AtomaNode -- Stream Response --> Client
+    AtomaProxy -- Request node registry --> n2["Sui Testnet&nbsp; Contract"]
+    n2 -- Respond Atoma Node to process request --> AtomaProxy
+    Client -- chat completion request --> AtomaProxy
+
+    n2@{ shape: rect}
+```
+
 ## Environment Variables
 
 The following environment variables are required to run the environment:
