@@ -1,0 +1,55 @@
+# .github/workflows/test-env.yml
+name: Dev Environment Test
+
+on: [pull_request]
+
+env:
+  HF_TOKEN: ${{ secrets.HF_TOKEN }}
+  VLLM_ENDPOINT: ${{ secrets.VLLM_ENDPOINT }}
+  SUI_RPC_ENDPOINT: ${{ secrets.SUI_RPC_ENDPOINT }}
+  SUI_CONTRACT_ADDRESS: ${{ secrets.SUI_CONTRACT_ADDRESS }}
+  ATOMA_NODE_BADGE_ID: ${{ secrets.ATOMA_NODE_BADGE_ID }}
+
+jobs:
+  deploy-test:
+    runs-on: ubuntu-latest
+    services:
+      docker:
+        image: docker:dind
+        options: --privileged
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v2
+
+      - name: Build Docker images
+        run: |
+          docker build -t your-proxy-image:latest -f proxy.Dockerfile .
+          docker build -t your-atoma-node:latest -f node.Dockerfile .
+          docker build -t your-sui-mock-image:latest -f sui-mock.Dockerfile .
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init & Apply
+        run: |
+          terraform init
+          terraform apply -auto-approve
+
+      - name: Run Test Request
+        run: |
+          sleep 30  # Wait for services to start
+          curl -v -N -X POST http://localhost:8000/v1/chat/completions \
+            -H "Content-Type: application/json" \
+            -d '{"messages": [{"role": "user", "content": "test"}]}' \
+            --output response.txt
+
+          # Verify response contains 200 status
+          grep "200 OK" response.txt || exit 1
+
+      - name: Cleanup
+        if: always()
+        run: terraform destroy -auto-approve
