@@ -7,7 +7,7 @@ ARG BUILDPLATFORM
 ARG TARGETARCH
 
 # Trace level argument
-ARG TRACE_LEVEL
+ARG TRACE_LEVEL=info
 ARG PROFILE
 
 # Install build dependencies
@@ -19,12 +19,12 @@ RUN apt-get update && apt-get install -y \
 	git \
 	&& rm -rf /var/lib/apt/lists/*
 
-WORKDIR /usr/src/atoma-infer
-
-COPY . .
 
 # Initialize and update git submodules
 RUN git submodule init && git submodule update --recursive
+
+# Save git commit hash
+RUN git rev-parse HEAD > /usr/src/checksum.txt
 
 # Compile
 RUN if [ "$PROFILE" = "cloud" ]; then \
@@ -47,8 +47,9 @@ WORKDIR /app
 # Create necessary directories
 RUN mkdir -p /app/logs
 
-# Copy the built binary from builder stage
-COPY --from=builder /usr/src/atoma-infer/target/release/atoma-infer /usr/local/bin/atoma-infer
+# Copy the built binary and checksum from builder stage
+COPY --from=builder /usr/src/target/release/atoma-infer /usr/local/bin/atoma-infer
+COPY --from=builder /usr/src/checksum.txt /app/checksum.txt
 
 # Set executable permissions
 RUN chmod +x /usr/local/bin/atoma-infer

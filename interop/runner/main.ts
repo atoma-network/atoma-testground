@@ -5,7 +5,7 @@ async function main() {
 	const API_KEY = process.env.API_KEY || '';
 	const BASE_URL = process.env.BASE_URL || 'https://api.atoma.network';
 	const MODEL = process.env.MODEL || 'meta-llama/Llama-3.3-70B-Instruct';
-	console.log('\nAPI Health Check');
+	console.log('\nChat Completion Health Check');
 	console.log('==============\n');
 
 	try {

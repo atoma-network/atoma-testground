@@ -36,9 +36,6 @@ flowchart TD
     ClientScript -- assemble responses --> GithubArtifacts
 
     n2@{ shape: rect}
-
-
-
 ```
 
 ## Environment Variables

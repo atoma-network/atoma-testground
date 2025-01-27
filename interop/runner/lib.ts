@@ -31,3 +31,27 @@ export async function makeCompletionRequest(apiKey: string, baseUrl: string, mod
 		throw error;
 	}
 }
+
+export async function makePurchaseRequest(apiKey: string, baseUrl: string, model: string) {
+	const url = `${baseUrl}/v1/purchase`;
+
+
+	try {
+		const response = await axios.post(url, {
+			model
+		}, {
+			headers: {
+				'Authorization': `Bearer ${apiKey}`
+			}
+		});
+
+		if (response.status !== 200) {
+			throw new Error(`Request failed with status ${response.status}`);
+		}
+
+		return response.data;
+	} catch (error) {
+		console.error('Error making purchase request:', error);
+		throw error;
+	}
+}
