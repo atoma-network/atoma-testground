@@ -16,18 +16,29 @@ flowchart TD
         AtomaProxy["Atoma Proxy Node"]
         AtomaNode["Atoma Node"]
         vLLMService["vLLM Service"]
+        PrometheusClient["Prometheus Client"]
   end
-    Client["Client"] -- HTTP Request --> AtomaProxy
     AtomaProxy -- Forward Request --> AtomaNode
-    AtomaNode -- Model Selection --> HuggingFace["HF Token Registry"]
+    AtomaNode -- Download model weights --> HuggingFace["HF Token Registry"]
+    AtomaNode -- Cache model weights --> HuggingFaceCachingService
     AtomaNode -- vLLM Request --> vLLMService
     vLLMService -- Token Stream --> AtomaNode
-    AtomaNode -- Stream Response --> Client
+    AtomaNode -- Stream Response --> ClientScript
+    AtomaNode -- Stream Metrics --> PrometheusClient
     AtomaProxy -- Request node registry --> n2["Sui Testnet&nbsp; Contract"]
     n2 -- Respond Atoma Node to process request --> AtomaProxy
-    Client -- chat completion request --> AtomaProxy
+    PurchaseScript -- purchase Stack --> AtomaProxy
+    AtomaProxy -- purchase stack on-chain txn --> n2
+    n2 -- assign nodgebadge --> AtomaNode
+    n2 -- assign stack --> AtomaProxy
+    ClientScript -- chat completion request --> AtomaProxy
+    PrometheusClient -- metrics --> GraphanaDashboard
+    ClientScript -- assemble responses --> GithubArtifacts
 
     n2@{ shape: rect}
+
+
+
 ```
 
 ## Environment Variables
