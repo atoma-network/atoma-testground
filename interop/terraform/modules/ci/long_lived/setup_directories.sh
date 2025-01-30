@@ -8,6 +8,7 @@ DIRECTORIES=(
     "${DATA_ROOT}/atoma-proxy/data"
     "${DATA_ROOT}/atoma-node/data"
     "${DATA_ROOT}/atoma-node/model-cache"
+    "${DATA_ROOT}/atoma-node/logs"
 )
 
 # Create directories and set permissions
