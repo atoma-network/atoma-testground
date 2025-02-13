@@ -1,23 +1,44 @@
-import { makeCompletionRequest } from './lib';
-import chalk from 'chalk';
+import { AtomaSDK } from "atoma-sdk";
 
-async function main() {
-	const API_KEY = process.env.API_KEY || '';
-	const BASE_URL = process.env.BASE_URL || 'https://api.atoma.network';
-	const MODEL = process.env.MODEL || 'meta-llama/Llama-3.3-70B-Instruct';
-	console.log('\nChat Completion Health Check');
-	console.log('==============\n');
+async function runE2ETests() {
+	const sdk = new AtomaSDK({
+		baseUrl: process.env.ATOMA_API_URL || "http://localhost:8080",
+		bearerAuth: process.env.ATOMA_API_KEY || "test-key"
+	});
 
 	try {
-		await makeCompletionRequest(API_KEY, BASE_URL, MODEL);
-		console.log(`Status: ${chalk.green('●')} 200 OK`);
-	} catch (error: any) {
-		const statusCode = error.response?.status || 'Unknown';
-		console.log(`Status: ${chalk.red('●')} ${statusCode} Error`);
-		console.error('Error details:', error.message);
+		// Health check
+		const health = await sdk.health.health();
+		console.log("Health check passed:", health.message);
+
+		// Test chat completions
+		const chatResponse = await sdk.chat.create({
+			messages: [
+				{ role: "user", content: "Hello, are you operational?" }
+			],
+			model: "meta-llama/Llama-3.3-70B-Instruct"
+		});
+		console.log("Chat completion successful:", chatResponse.choices[0].message.content);
+
+		// Test embeddings
+		const embeddingResponse = await sdk.embeddings.create({
+			model: "intfloat/multilingual-e5-large-instruct",
+			input: "Test embedding generation"
+		});
+		console.log("Embedding generation successful, dimensions:", embeddingResponse.data[0].embedding.length);
+
+		console.log("All tests passed successfully");
+		process.exit(0);
+	} catch (error) {
+		console.error("Test failed:", error);
+		process.exit(1);
 	}
 }
 
-main().catch(console.error);
-
-
+runE2ETests().then(() => {
+	console.log("All tests passed successfully");
+	process.exit(0);
+}).catch((error) => {
+	console.error("Test failed:", error);
+	process.exit(1);
+});
