@@ -1,47 +1,59 @@
 # Variables
 REPO_URL = https://github.com/atoma-network/atoma-proxy.git
+REPO_RAW_URL = https://raw.githubusercontent.com/atoma-network/atoma-proxy/main
 CLONE_DIR = atoma-proxy
 DOCKERFILE = Dockerfile
+DOCKER_COMPOSE = docker-compose.yaml
 CHECKSUM_FILE = checksums.txt
 
 # Default target
 .PHONY: all
-all: clean clone verify build
+all: clean update build
 
 # Clean previous build artifacts
 .PHONY: clean
 clean:
 	rm -rf $(CLONE_DIR)
 	rm -f $(CHECKSUM_FILE)
+	rm -f $(DOCKER_COMPOSE)
 
-# Clone the repository
-.PHONY: clone
-clone:
-	git clone $(REPO_URL) $(CLONE_DIR)
+# Update files from repository
+.PHONY: update
+update:
+	@echo "Downloading latest docker-compose.yaml..."
+	@curl -f -s -S -o $(DOCKER_COMPOSE) $(REPO_RAW_URL)/interop/nodes/atoma-proxy/$(DOCKER_COMPOSE) || (echo "Failed to download $(DOCKER_COMPOSE)" && exit 1)
+	@echo "Successfully updated $(DOCKER_COMPOSE)"
+	@echo "Downloading latest Dockerfile..."
+	@curl -f -s -S -o $(DOCKERFILE) $(REPO_RAW_URL)/$(DOCKERFILE) || (echo "Failed to download $(DOCKERFILE)" && exit 1)
+	@echo "Successfully updated $(DOCKERFILE)"
+	@curl -f -s -S -o $(CHECKSUM_FILE) $(REPO_RAW_URL)/$(CHECKSUM_FILE) || (echo "Failed to download $(CHECKSUM_FILE)" && exit 1)
 
-# Download and verify checksums
-.PHONY: verify
-verify:
-	cd $(CLONE_DIR) && \
-	git rev-parse HEAD > ../${CHECKSUM_FILE} && \
-	echo "Repository cloned at commit: $$(cat ../${CHECKSUM_FILE})"
+# Create required directories
+.PHONY: setup
+setup:
+	mkdir -p data logs
 
-# Build using Docker
-.PHONY: build
-build:
-	docker build \
-		--build-arg TRACE_LEVEL=info \
-		-f $(CLONE_DIR)/$(DOCKERFILE) \
-		-t atoma-node:latest \
-		$(CLONE_DIR)
+# Generate configuration files
+.PHONY: config
+config:
+	./generate-config.sh
+
+# Update run target to include config generation
+.PHONY: run
+run: update config build
+	docker compose --profile local up -d
+
+
 
 # Help target
 .PHONY: help
 help:
 	@echo "Available targets:"
-	@echo "  all     - Clean, clone, verify and build (default)"
-	@echo "  clean   - Remove build artifacts"
-	@echo "  clone   - Clone the repository"
-	@echo "  verify  - Verify repository checksum"
-	@echo "  build   - Build Docker image"
-	@echo "  help    - Show this help message"
+	@echo "  all           - Clean, update files and build (default)"
+	@echo "  clean         - Remove build artifacts"
+	@echo "  update        - Update Dockerfile and docker-compose.yaml from repository"
+	@echo "  setup         - Create required directories"
+	@echo "  build         - Build Docker image"
+	@echo "  run           - Run the local profile (foreground)"
+	@echo "  run-detached  - Run the local profile (background)"
+	@echo "  help          - Show this help message"

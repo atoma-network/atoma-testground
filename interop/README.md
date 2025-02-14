@@ -20,10 +20,9 @@ In some cases you may want to run locally when debugging, such as modifying inte
 1. To run the test locally, you'll also need to have docker installed in order to run the redis instance. Once docker is running, you can run the following command to start the redis instance:
 
 ```bash
-docker run --rm -p 6379:6379 redis:7-alpine
+docker add debug command
 ```
 
-This will start a redis instance on port 6379.
 
 1. Next, you'll need to install the dependencies and build the implementation for the test, so run the following command:
 
