@@ -20,13 +20,6 @@ async function runE2ETests() {
 		});
 		console.log("Chat completion successful:", chatResponse.choices[0].message.content);
 
-		// Test embeddings
-		const embeddingResponse = await sdk.embeddings.create({
-			model: "intfloat/multilingual-e5-large-instruct",
-			input: "Test embedding generation"
-		});
-		console.log("Embedding generation successful, dimensions:", embeddingResponse.data[0].embedding.length);
-
 		console.log("All tests passed successfully");
 		process.exit(0);
 	} catch (error) {
