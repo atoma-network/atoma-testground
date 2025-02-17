@@ -12,8 +12,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - uses: actions/checkout@v3
-
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
@@ -21,7 +19,7 @@ runs:
 
     - name: Build atoma-nodes
       shell: bash
-      working-directory: interop
+      working-directory: interop/nodes
       run: make
 
     - name: Install dependencies
@@ -42,5 +40,4 @@ runs:
       working-directory: interop
       if: failure()
       run: |
-        docker-compose logs
-        docker-compose -f docker-compose-node.yml logs
+        docker compose logs
