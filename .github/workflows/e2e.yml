@@ -8,7 +8,7 @@ on:
 
 jobs:
   e2e-test:
-    name: Perf
+    name: e2e-test
     runs-on: ubuntu-latest
     timeout-minutes: 240
     defaults:

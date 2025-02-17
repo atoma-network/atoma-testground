@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Check if .atoma_env exists
-if [ ! -f .atoma_env ]; then
-    echo "Error: .atoma_env file not found"
+# Check if .atoma.env exists
+if [ ! -f .atoma.env ]; then
+    echo "Error: .atoma.env file not found"
     exit 1
 fi
 
 # Source the environment variables
-source .atoma_env
+source .atoma.env
 
 # Generate config.toml
 cat > config.toml << EOF

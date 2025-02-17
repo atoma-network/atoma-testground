@@ -1,0 +1,43 @@
+[atoma_service]
+chat_completions_service_urls = {TinyLlama/TinyLlama-1.1B-Chat-v1.0:66.23.193.245:8080}
+embeddings_service_url = "66.23.193.245:8080"
+image_generations_service_url = "66.23.193.245:8080"
+models = ["TinyLlama/TinyLlama-1.1B-Chat-v1.0"]
+revisions = ["main"]
+service_bind_address = "0.0.0.0:3000"
+
+[atoma_sui]
+http_rpc_node_addr = "https://fullnode.testnet.sui.io:443"
+atoma_db = "0x4613c1d42e177c4907fc79a8e7351dcbb9dcb3e7cc7d99c2dee52a66d34c7caa"
+atoma_package_id = "0xb3ff74e28867a56a0f54fad446e51bcb1938923e13918b560c08e65328bde5c3"
+usdc_package_id = "0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29"
+request_timeout = { secs = 300, nanos = 0 }
+max_concurrent_requests = 10
+limit = 100
+node_small_ids = [1]
+sui_config_path = "/Users/horizon/.sui/sui_config/client.yaml"
+sui_keystore_path = "/Users/horizon/.sui/sui_config/sui.keystore"
+cursor_path = "./cursor.toml"
+
+[atoma_state]
+database_url = "postgresql://atoma:atoma@db:5432/atoma"
+
+[atoma_daemon]
+service_bind_address = "0.0.0.0:3001"
+node_badges = [["0x59eb94ef8955acff4599ea4d2cec51ebe226f9a70d6f5c72ab4597f263ef6acb:1]]
+
+[proxy_server]
+proxy_address = "http://localhost:8080"
+node_public_address = "http://localhost:3002"
+country = "JM"
+
+[atoma_p2p]
+heartbeat_interval = { secs = 30, nanos = 0 }
+idle_connection_timeout = { secs = 60, nanos = 0 }
+listen_addr = "/ip4/0.0.0.0/udp/4001/quic-v1"
+node_small_id = 1
+public_url = "https://atoma.chad.com"
+bootstrap_nodes = [
+    QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN,QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa,QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb,QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt,12D3KooWKnDdG3iXw9eTFijk3EWSunZcFi54Zka4wmtqtt6rPxc
+]
+country = "JM"
