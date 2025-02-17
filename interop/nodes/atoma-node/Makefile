@@ -32,7 +32,7 @@ config:
 # Run the local profile
 .PHONY: build
 build: update config
-	COMPOSE_PROFILES=chat_completions_vllm,non-confidential docker compose up -d
+	COMPOSE_PROFILES=mistralrs-cpu,non-confidential docker compose up -d
 
 
 # Help target
