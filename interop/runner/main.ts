@@ -1,9 +1,14 @@
 import { AtomaSDK } from "atoma-sdk";
 
 async function runE2ETests() {
+
+	if (!process.env.ATOMA_API_KEY) {
+		throw new Error(" ATOMA_API_KEY must be set");
+	}
+
 	const sdk = new AtomaSDK({
-		baseUrl: process.env.ATOMA_API_URL || "http://localhost:8080",
-		bearerAuth: process.env.ATOMA_API_KEY || "test-key"
+		serverURL: process.env.ATOMA_API_URL || "http://localhost:8080",
+		bearerAuth: process.env.ATOMA_API_KEY,
 	});
 
 	try {

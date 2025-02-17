@@ -1,0 +1,29 @@
+name: Dev Environment Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  e2e-test:
+    name: Perf
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    defaults:
+      run:
+        shell: bash
+        working-directory: interop
+    steps:
+      - name: Checkout test-plans
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ github.repository }}
+          ref: ${{ github.ref }}
+
+      - name: Run Chat Completion e2e Test
+        uses: ./.github/actions/run-chat-completion-request
+        with:
+          api_key: ${{ secrets.ATOMA_API_KEY }}
+          api_url: ${{ vars.ATOMA_API_URL }}

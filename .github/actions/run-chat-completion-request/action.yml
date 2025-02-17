@@ -1,18 +1,44 @@
 name: "chat completion request"
 description: "Runs a chat completion request with a given model"
 inputs:
-  api-key:
+  api_url:
+    description: "The API URL to use"
+    required: false
+  api_key:
     description: "The API key to use"
     required: true
-  model:
-    description: "Which model to use"
-    required: false
-    default: "meta-llama/Llama-3.3-70B-Instruct"
 runs:
   using: "composite"
   steps:
-    - name: Run E2E Tests
-      uses: atoma-network/e2e-tests@main
+    - uses: actions/checkout@v3
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
       with:
-        api_url: ${{ inputs.api_url }}
-        api_key: ${{ secrets.api_key }}
+        node-version: "22.14.0"
+
+    - name: Build atoma-nodes
+      shell: bash
+      working-directory: interop
+      run: make
+
+    - name: Install dependencies
+      shell: bash
+      working-directory: interop/runner
+      run: npm ci
+
+    - name: run e2e-test
+      shell: bash
+      env:
+        ATOMA_API_KEY: ${{ secrets.ATOMA_API_KEY }}
+        ATOMA_API_URL: ${{ inputs.api_url }}
+      working-directory: interop/runner
+      run: npm run e2e-test
+
+    - name: Collect Docker logs on failure
+      shell: bash
+      working-directory: interop
+      if: failure()
+      run: |
+        docker-compose logs
+        docker-compose -f docker-compose-node.yml logs
