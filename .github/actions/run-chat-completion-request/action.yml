@@ -1,12 +1,14 @@
-name: "chat completion request"
-description: "Runs a chat completion request with a given model"
+name: "Run Chat Completion Request"
+description: "Runs a chat completion request test"
+
 inputs:
-  api_url:
-    description: "The API URL to use"
-    required: false
   api_key:
-    description: "The API key to use"
+    description: "API key for authentication"
     required: true
+  api_url:
+    description: "API URL endpoint"
+    required: true
+
 runs:
   using: "composite"
   steps:
@@ -30,7 +32,7 @@ runs:
     - name: run e2e-test
       shell: bash
       env:
-        ATOMA_API_KEY: ${{ secrets.ATOMA_API_KEY }}
+        ATOMA_API_KEY: ${{ inputs.api_key }}
         ATOMA_API_URL: ${{ inputs.api_url }}
       working-directory: interop/runner
       run: npm run e2e-test
