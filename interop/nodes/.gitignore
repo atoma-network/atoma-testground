@@ -2,5 +2,4 @@
 */*.zip
 atoma-*/Dockerfile
 atoma-*/docker-compose.yaml
-atoma-*/.atoma.env
 atoma-*/.env
