@@ -12,7 +12,7 @@ source .atoma.env
 # Generate config.toml
 cat > config.toml << EOF
 [atoma_service]
-chat_completions_service_urls = ${ATOMA_SERVICE_CHAT_COMPLETIONS_URLS:-'{ "TinyLlama/TinyLlama-1.1B-Chat-v1.0" = "66.23.193.245:8080" }'}
+chat_completions_service_urls = {"${CHAT_COMPLETIONS_MODEL:-"meta-llama/Llama-3.2-3B-Instruct"}" = "${ATOMA_SERVICE_CHAT_COMPLETIONS_URLS:-"http://chat-completions:8000"}"}
 embeddings_service_url = "${ATOMA_SERVICE_EMBEDDINGS_URL:-"66.23.193.245:8080"}"
 image_generations_service_url = "${ATOMA_SERVICE_IMAGE_GENERATIONS_URL:-"66.23.193.245:8080"}"
 models = ["${ATOMA_SERVICE_MODELS:-"TinyLlama/TinyLlama-1.1B-Chat-v1.0"}"]
@@ -37,7 +37,12 @@ database_url = "${ATOMA_STATE_DATABASE_URL:-"postgresql://atoma:atoma@db:5432/at
 
 [atoma_daemon]
 service_bind_address = "${ATOMA_DAEMON_BIND_ADDRESS:-"0.0.0.0:3001"}"
-node_badges = [["${ATOMA_DAEMON_NODE_BADGES:-"0x59eb94ef8955acff4599ea4d2cec51ebe226f9a70d6f5c72ab4597f263ef6acb:1"}]]
+node_badges = [
+    [
+        "0x268e6af9502dcdcaf514bb699c880b37fa1e8d339293bc4f331f2dde54180600",
+        1,
+    ],
+]
 
 [proxy_server]
 proxy_address = "${PROXY_SERVER_ADDRESS:-"http://localhost:8080"}"
@@ -51,11 +56,11 @@ listen_addr = "${ATOMA_P2P_LISTEN_ADDR:-"/ip4/0.0.0.0/udp/4001/quic-v1"}"
 node_small_id = ${ATOMA_P2P_NODE_SMALL_ID:-1}
 public_url = "${ATOMA_P2P_PUBLIC_URL:-"https://atoma.chad.com"}"
 bootstrap_nodes = [
-    ${ATOMA_P2P_BOOTSTRAP_NODES:-'"QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
+    "QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
     "QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa",
     "QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
     "QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt",
-    "12D3KooWKnDdG3iXw9eTFijk3EWSunZcFi54Zka4wmtqtt6rPxc"'}
+    "12D3KooWKnDdG3iXw9eTFijk3EWSunZcFi54Zka4wmtqtt6rPxc"
 ]
 country = "${ATOMA_P2P_COUNTRY:-"JM"}"
 EOF
@@ -98,7 +103,7 @@ CHAT_COMPLETIONS_MODEL=${CHAT_COMPLETIONS_MODEL:-"meta-llama/Llama-3.1-70B-Instr
 CHAT_COMPLETIONS_MAX_MODEL_LEN=${CHAT_COMPLETIONS_MAX_MODEL_LEN:-4096} # context length
 
 # vllm backend
-VLLM_ENGINE_ARGS=${VLLM_ENGINE_ARGS:-"--model \${CHAT_COMPLETIONS_MODEL} --max-model-len \${CHAT_COMPLETIONS_MAX_MODEL_LEN}"}
+VLLM_ENGINE_ARGS=--model \${CHAT_COMPLETIONS_MODEL} --max-model-len \${CHAT_COMPLETIONS_MAX_MODEL_LEN}
 
 # ----------------------------------------------------------------------------------
 # embeddings server

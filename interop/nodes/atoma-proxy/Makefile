@@ -1,7 +1,7 @@
 # Variables
 REPO_RAW_URL = https://raw.githubusercontent.com/atoma-network/atoma-proxy/main
 DOCKERFILE = Dockerfile
-DOCKER_COMPOSE = docker-compose.yaml
+DOCKER_COMPOSE = docker-compose.dev.yaml
 
 # Default target
 .PHONY: all

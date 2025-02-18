@@ -3,3 +3,5 @@
 atoma-*/Dockerfile
 atoma-*/docker-compose.yaml
 atoma-*/.env
+atoma-*/config.toml
+atoma-*/cursor.toml

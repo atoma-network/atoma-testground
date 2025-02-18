@@ -68,10 +68,6 @@ SUI_PROVER_SERVICE_PORT=${SUI_PROVER_SERVICE_PORT:-8082}
 
 # Prover Configuration
 ZKEY=${ZKEY:-"./binaries/zkLogin.zkey"}
-
-# Monitoring Configuration
-PROMETHEUS_PORT=${PROMETHEUS_PORT:-9090}
-GRAFANA_PORT=${GRAFANA_PORT:-30001}
 EOF
 
 echo "Generated config.toml and .env files"
