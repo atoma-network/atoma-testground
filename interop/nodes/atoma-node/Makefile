@@ -1,5 +1,5 @@
 # Variables
-REPO_RAW_URL = https://raw.githubusercontent.com/atoma-network/atoma-node/main
+REPO_RAW_URL = https://raw.githubusercontent.com/maschad/atoma-node/mc/build/add-docker-compose-dev
 DOCKERFILE = Dockerfile
 DOCKER_COMPOSE = docker-compose.yaml
 

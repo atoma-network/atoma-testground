@@ -1,5 +1,5 @@
 # Variables
-REPO_RAW_URL = https://raw.githubusercontent.com/atoma-network/atoma-proxy/main
+REPO_RAW_URL = https://raw.githubusercontent.com/maschad/atoma-proxy/mc/ci/compose-dev-config
 DOCKERFILE = Dockerfile
 DOCKER_COMPOSE = docker-compose.yaml
 
@@ -38,8 +38,6 @@ config:
 .PHONY: build
 build: update config build
 	docker compose --profile local up -d
-
-
 
 # Help target
 .PHONY: help
