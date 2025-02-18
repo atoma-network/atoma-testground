@@ -43,8 +43,43 @@ google_client_id      = "${GOOGLE_CLIENT_ID:-""}"
 refresh_token_lifetime = ${REFRESH_TOKEN_LIFETIME:-1}
 secret_key            = "${AUTH_SECRET_KEY:-"secret_key"}"
 
+[atoma_state.component_weights]
+gpu_score_weight = 0.6
+cpu_score_weight = 0.2
+ram_score_weight = 0.075
+swap_ram_score_weight = 0.075
+network_score_weight = 0.05
+
+[atoma_state.gpu]
+gpu_vram_weight = 0.3
+gpu_execution_weight = 0.3
+gpu_temp_threshold = 80.0
+gpu_temp_max = 100.0
+gpu_power_threshold = 350.0
+gpu_power_max = 700.0
+
+[atoma_state.ram]
+# RAM usage weight
+ram_usage_weight = 0.5
+# Swap RAM usage weight
+swap_ram_usage_weight = 0.5
+
+[atoma_state.moving_average]
+moving_avg_window_size = 10
+moving_avg_smooth_factor = 0.2
+
 [atoma_p2p]
 listen_address = "${P2P_LISTEN_ADDRESS:-"0.0.0.0:8080"}"
+heartbeat_interval = { secs = 30, nanos = 0 }
+idle_connection_timeout = { secs = 60, nanos = 0 }
+listen_addr = "/ip4/0.0.0.0/udp/4001/quic-v1"
+bootstrap_nodes = [
+    "QmNnooDu7bfjPFoTZYxMNLWUQJyrVwtbZg5gBMjTezGAJN",
+    "QmQCU2EcMqAqQPR2i9bChDtGNJchTbq5TbXJJ16u19uLTa",
+    "QmbLHAnMoJPWSCR5Zhtx6BHJX9KiKNN6tpvbUcqanj75Nb",
+    "QmcZf59bWwK5XFi76CZX8cbJ4BhTzzA3gU1ZjYZcYW3dwt",
+    "12D3KooWKnDdG3iXw9eTFijk3EWSunZcFi54Zka4wmtqtt6rPxc8",
+]
 EOF
 
 # Generate .env file for docker-compose
