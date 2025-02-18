@@ -26,10 +26,11 @@ runs:
         echo "${{ inputs.SUI_KEYPAIR }}" > ./sui_config/sui.keystore
 
     - name: Setup Node.js
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v4
       with:
         node-version: "22.14.0"
         cache: "npm"
+        cache-dependency-path: interop/runner/package-lock.json
 
     - name: Build atoma-nodes
       shell: bash
@@ -51,7 +52,12 @@ runs:
 
     - name: Collect Docker logs on failure
       shell: bash
-      working-directory: interop
+      working-directory: interop/nodes/atoma-node
       if: failure()
       run: |
+        echo "=== Atoma Node Logs ==="
+        docker compose logs
+
+        echo -e "\n=== Atoma Proxy Logs ==="
+        cd ../atoma-proxy
         docker compose logs
