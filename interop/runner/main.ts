@@ -7,11 +7,12 @@ async function runE2ETests() {
 	}
 
 	const sdk = new AtomaSDK({
-		serverURL: process.env.ATOMA_API_URL || "http://localhost:8080",
+		serverURL: process.env.ATOMA_API_URL || "http://localhost:8081",
 		bearerAuth: process.env.ATOMA_API_KEY,
 	});
 
 	try {
+		console.log("Running tests against:", process.env.ATOMA_API_URL);
 		// Health check
 		const health = await sdk.health.health();
 		console.log("Health check passed:", health.message);
