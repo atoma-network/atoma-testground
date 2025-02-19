@@ -5,3 +5,9 @@ atoma-*/docker-compose.yaml
 atoma-*/.env
 atoma-*/config.toml
 atoma-*/cursor.toml
+atoma-*/data
+atoma-*/logs
+atoma-*/sui_config
+atoma-*/sui.keystore
+atoma-*/sui.aliases
+

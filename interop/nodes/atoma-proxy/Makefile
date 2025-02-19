@@ -19,6 +19,7 @@ clean:
 update:
 	@echo "Downloading latest docker-compose.yaml..."
 	@curl -f -s -S -o $(DOCKER_COMPOSE) $(REPO_RAW_URL)/$(DOCKER_COMPOSE) || (echo "Failed to download $(DOCKER_COMPOSE)" && exit 1)
+	@mv $(DOCKER_COMPOSE) docker-compose.yaml
 	@echo "Successfully updated $(DOCKER_COMPOSE)"
 	@echo "Downloading latest Dockerfile..."
 	@curl -f -s -S -o $(DOCKERFILE) $(REPO_RAW_URL)/$(DOCKERFILE) || (echo "Failed to download $(DOCKERFILE)" && exit 1)
