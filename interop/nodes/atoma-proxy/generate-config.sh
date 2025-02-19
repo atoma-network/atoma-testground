@@ -24,7 +24,7 @@ sui_keystore_path      = "${SUI_KEYSTORE_PATH:-"/root/.sui/sui_config/sui.keysto
 usdc_package_id        = "${USDC_PACKAGE_ID}"
 
 [atoma_state]
-database_url = "${ATOMA_STATE_DATABASE_URL:-"postgresql://atoma:atoma@db:5432/atoma"}"
+database_url = "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres-db:${POSTGRES_PORT}/${POSTGRES_DB}"
 
 [atoma_service]
 hf_token             = "${HF_TOKEN}"

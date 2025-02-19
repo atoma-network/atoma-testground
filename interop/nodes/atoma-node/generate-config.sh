@@ -33,7 +33,7 @@ sui_keystore_path = "${ATOMA_SUI_KEYSTORE_PATH:-"/root/.sui/sui_config/sui.keyst
 cursor_path = "${ATOMA_SUI_CURSOR_PATH:-"./cursor.toml"}"
 
 [atoma_state]
-database_url = "${ATOMA_STATE_DATABASE_URL:-"postgresql://atoma:atoma@db:5432/atoma"}"
+database_url = "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:${POSTGRES_PORT}/${POSTGRES_DB}"
 
 [atoma_daemon]
 service_bind_address = "${ATOMA_DAEMON_BIND_ADDRESS:-"0.0.0.0:3001"}"
