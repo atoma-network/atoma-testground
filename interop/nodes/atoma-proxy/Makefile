@@ -1,5 +1,5 @@
 # Variables
-REPO_RAW_URL = https://raw.githubusercontent.com/atoma-network/atoma-proxy/main
+REPO_RAW_URL = https://raw.githubusercontent.com/maschad/atoma-proxy/mc/add-grafana-server-url
 DOCKERFILE = Dockerfile
 DOCKER_COMPOSE = docker-compose.dev.yaml
 
