@@ -34,3 +34,20 @@ module "storage" {
   vpc_id          = module.networking.vpc_id
   private_subnets = module.networking.private_subnet_ids
 }
+
+# Example simplified Terraform configuration
+resource "aws_instance" "atoma_node" {
+  ami           = "ami-0c55b159cbfafe1f0" # Ubuntu 20.04 LTS
+  instance_type = "c6i.2xlarge"           # 8 vCPUs, 16 GiB memory
+  key_name      = aws_key_pair.deployer.key_name
+
+  # More configuration...
+}
+
+resource "aws_instance" "atoma_proxy" {
+  ami           = "ami-0c55b159cbfafe1f0" # Ubuntu 20.04 LTS
+  instance_type = "c5.xlarge"             # 4 vCPUs, 8 GiB memory
+  key_name      = aws_key_pair.deployer.key_name
+
+  # More configuration...
+}
