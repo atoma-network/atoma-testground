@@ -17,19 +17,15 @@ cd /opt/atoma
 # Replace with your actual repository URL
 git clone https://github.com/atoma-network/atoma-node.git .
 
-# Create environment file
-cat > .env << EOF
-POSTGRES_DB=atomadb
-POSTGRES_USER=atoma
-POSTGRES_PASSWORD=atomapassword
-POSTGRES_PORT=5432
-ATOMA_SERVICE_PORT=3000
-ATOMA_DAEMON_PORT=3001
-ATOMA_P2P_PORT=4001
-RUST_LOG=info
-CHAT_COMPLETIONS_MODEL=mistralai/Mistral-7B-Instruct-v0.2
-CHAT_COMPLETIONS_MAX_MODEL_LEN=4096
-EOF
+# Generate configuration files
+echo "Generating configuration files..."
+chmod +x ./atoma-node/generate-config.sh
+./atoma-node/generate-config.sh
+
+# Copy configuration files to the right location
+echo "Setting up configuration..."
+cp config.toml .env ./
+
 
 # Start the Atoma node with vllm-cpu
 docker-compose -f docker-compose.yaml --profile chat_completions_vllm_cpu up -d
