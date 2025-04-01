@@ -85,6 +85,19 @@ PROXY_IP=$(aws ec2 describe-instances --instance-ids $PROXY_INSTANCE_ID --query 
 echo "Atoma Node IP: $NODE_IP"
 echo "Atoma Proxy IP: $PROXY_IP"
 
+# Wait a bit for the instances to be ready for SSH
+echo "Waiting for SSH to be available..."
+sleep 30
+
+# Copy configuration files to the node instance
+echo "Copying configuration files to node instance..."
+scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem .env ubuntu@$NODE_IP:/home/ubuntu/
+scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem config.toml ubuntu@$NODE_IP:/home/ubuntu/
+
+# Move files to the correct location using SSH
+echo "Moving files to /opt/atoma..."
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'sudo mv /home/ubuntu/.env /opt/atoma/ && sudo mv /home/ubuntu/config.toml /opt/atoma/'
+
 # Save instance IDs for cleanup
 echo "$NODE_INSTANCE_ID $PROXY_INSTANCE_ID" > instance_ids.txt
 

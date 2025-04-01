@@ -11,3 +11,6 @@ atoma-*/sui_config
 atoma-*/sui.keystore
 atoma-*/sui.aliases
 */atoma-key.pem
+.env
+config.toml
+cursor.toml

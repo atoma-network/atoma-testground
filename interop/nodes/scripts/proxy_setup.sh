@@ -28,4 +28,4 @@ cp config.toml .env ./
 
 
 # Start the Atoma proxy with local profile
-docker-compose -f docker-compose.yaml --profile local up -d
+docker compose --profile cloud up -d --build
