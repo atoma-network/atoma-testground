@@ -2,9 +2,10 @@
 set -e
 
 # Variables
-REGION="us-west-2"
-NODE_INSTANCE_TYPE="c5.2xlarge"  # Good for CPU workloads
-PROXY_INSTANCE_TYPE="t3.medium"  # Sufficient for proxy
+REGION="us-east-2"
+# NODE_INSTANCE_TYPE="g4dn.2xlarge"  # GPU instance with NVIDIA T4 GPU for ML workloads
+NODE_INSTANCE_TYPE="c5.2xlarge"  # CPU instance
+PROXY_INSTANCE_TYPE="c5.2xlarge"  # Sufficient for proxy
 AMI_ID="ami-03f8acd418785369b"  # Ubuntu 22.04 LTS
 KEY_NAME="atoma-key"
 SECURITY_GROUP_NAME="atoma-sg"
@@ -58,6 +59,7 @@ NODE_INSTANCE_ID=$(aws ec2 run-instances \
   --security-group-ids $SECURITY_GROUP_ID \
   --subnet-id $SUBNET_ID \
   --user-data file://node_setup.sh \
+  --block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"VolumeSize":100,"VolumeType":"gp3"}}]' \
   --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=atoma-node}]" \
   --query "Instances[0].InstanceId" \
   --output text)
@@ -71,6 +73,7 @@ PROXY_INSTANCE_ID=$(aws ec2 run-instances \
   --security-group-ids $SECURITY_GROUP_ID \
   --subnet-id $SUBNET_ID \
   --user-data file://proxy_setup.sh \
+  --block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"VolumeSize":100,"VolumeType":"gp3"}}]' \
   --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=atoma-proxy}]" \
   --query "Instances[0].InstanceId" \
   --output text)
@@ -94,9 +97,31 @@ echo "Copying configuration files to node instance..."
 scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem .env ubuntu@$NODE_IP:/home/ubuntu/
 scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem config.toml ubuntu@$NODE_IP:/home/ubuntu/
 
+# Copy the proxy environment variables and config to the proxy instance
+echo "Copying proxy environment variables and config to proxy instance..."
+scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem .proxy.env ubuntu@$PROXY_IP:/home/ubuntu/.env
+scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem config.proxy.toml ubuntu@$PROXY_IP:/home/ubuntu/config.toml
+
+sleep 30
+
 # Move files to the correct location using SSH
-echo "Moving files to /opt/atoma..."
+echo "Moving environment variables and config to the Node instance..."
 ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'sudo mv /home/ubuntu/.env /opt/atoma/ && sudo mv /home/ubuntu/config.toml /opt/atoma/'
+
+echo "Moving environment variables and config to the Proxy instance..."
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'sudo mv /home/ubuntu/.env /opt/atoma-proxy/ && sudo mv /home/ubuntu/config.toml /opt/atoma-proxy/'
+
+# Start the Atoma proxy with local profiles
+echo "Starting Atoma proxy..."
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma-proxy && export PLATFORM=linux/amd64 && sudo docker compose --profile cloud up -d --build'
+
+# Start the Atoma node with vllm-cpu and log the output
+# echo "Starting Docker Compose..."
+# ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64 && COMPOSE_PROFILES=mistralrs-cpu,non-confidential sudo docker compose up -d'
+
+# Check Docker status on Atoma Node
+echo "Checking Docker container status..."
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma-proxy && sudo docker ps -a'
 
 # Save instance IDs for cleanup
 echo "$NODE_INSTANCE_ID $PROXY_INSTANCE_ID" > instance_ids.txt
