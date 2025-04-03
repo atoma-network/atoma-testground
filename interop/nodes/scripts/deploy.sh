@@ -131,3 +131,9 @@ echo "NODE_IP=$NODE_IP" >> $GITHUB_ENV
 echo "PROXY_IP=$PROXY_IP" >> $GITHUB_ENV
 echo "NODE_INSTANCE_ID=$NODE_INSTANCE_ID" >> $GITHUB_ENV
 echo "PROXY_INSTANCE_ID=$PROXY_INSTANCE_ID" >> $GITHUB_ENV
+
+
+# Insert the node url into the proxy's database
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma-proxy && sudo docker exec -it atoma-proxy-db-1 psql -U postgres -d atoma -c "INSERT INTO nodes (url) VALUES (\"$NODE_IP\");"'
+
+
