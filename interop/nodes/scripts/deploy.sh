@@ -51,18 +51,18 @@ if [ -z "$SECURITY_GROUP_ID" ]; then
 fi
 
 # Launch Atoma Node instance
-echo "Launching Atoma Node instance..."
-NODE_INSTANCE_ID=$(aws ec2 run-instances \
-  --image-id $AMI_ID \
-  --instance-type $NODE_INSTANCE_TYPE \
-  --key-name $KEY_NAME \
-  --security-group-ids $SECURITY_GROUP_ID \
-  --subnet-id $SUBNET_ID \
-  --user-data file://node_setup.sh \
-  --block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"VolumeSize":100,"VolumeType":"gp3"}}]' \
-  --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=atoma-node}]" \
-  --query "Instances[0].InstanceId" \
-  --output text)
+# echo "Launching Atoma Node instance..."
+# NODE_INSTANCE_ID=$(aws ec2 run-instances \
+#   --image-id $AMI_ID \
+#   --instance-type $NODE_INSTANCE_TYPE \
+#   --key-name $KEY_NAME \
+#   --security-group-ids $SECURITY_GROUP_ID \
+#   --subnet-id $SUBNET_ID \
+#   --user-data file://node_setup.sh \
+#   --block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"VolumeSize":100,"VolumeType":"gp3"}}]' \
+#   --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=atoma-node}]" \
+#   --query "Instances[0].InstanceId" \
+#   --output text)
 
 # Launch Atoma Proxy instance
 echo "Launching Atoma Proxy instance..."
@@ -97,14 +97,29 @@ echo "Waiting for SSH to be available..."
 sleep 30
 
 # Copy configuration files to the node instance
-echo "Copying configuration files to node instance..."
-scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem .env ubuntu@$NODE_IP:/home/ubuntu/
-scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem config.toml ubuntu@$NODE_IP:/home/ubuntu/
+# echo "Copying configuration files to node instance..."
+# scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem .env ubuntu@$NODE_IP:/home/ubuntu/
+# scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem config.toml ubuntu@$NODE_IP:/home/ubuntu/
+
+
+# # Copy the sui config to the node instance
+# echo "Copying sui config to node instance..."
+# # Create .sui directory if it doesn't exist
+# ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'mkdir -p ~/.sui'
+# # Copy sui.toml to the correct location
+# scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem -r sui_config/ ubuntu@$NODE_IP:~/.sui/
+
+# Copy the sui config to the proxy instance
+echo "Copying sui config to proxy instance..."
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'sudo mkdir -p /root/.sui'
+scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem -r sui_config/ ubuntu@$PROXY_IP:/tmp/sui_config
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'sudo cp -r /tmp/sui_config /root/.sui/ && sudo chown -R root:root /root/.sui'
+
 
 # Update config.toml with PROXY_IP
-echo "Updating config.toml with PROXY_IP..."
-sed -i "s|/ip4/213.130.147.75/tcp/4001|/ip4/$PROXY_IP/tcp/4001|g" config.toml
-sed -i "s|/ip4/213.130.147.75/udp/4001/quic-v1|/ip4/$PROXY_IP/udp/4001/quic-v1|g" config.toml
+# echo "Updating config.toml with PROXY_IP..."
+# sed -i "s|/ip4/213.130.147.75/tcp/4001|/ip4/$PROXY_IP/tcp/4001|g" config.toml
+# sed -i "s|/ip4/213.130.147.75/udp/4001/quic-v1|/ip4/$PROXY_IP/udp/4001/quic-v1|g" config.toml
 
 # Copy the proxy environment variables and config to the proxy instance
 echo "Copying proxy environment variables and config to proxy instance..."
@@ -114,30 +129,26 @@ scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem config.proxy.toml ubuntu@$PROXY
 sleep 30
 
 # Move files to the correct location using SSH
-echo "Moving environment variables and config to the Node instance..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'sudo mv /home/ubuntu/.env /opt/atoma/ && sudo mv /home/ubuntu/config.toml /opt/atoma/'
+# echo "Moving environment variables and config to the Node instance..."
+# ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'sudo mv /home/ubuntu/.env /opt/atoma/ && sudo mv /home/ubuntu/config.toml /opt/atoma/'
 
 echo "Moving environment variables and config to the Proxy instance..."
 ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'sudo mv /home/ubuntu/.env /opt/atoma-proxy/ && sudo mv /home/ubuntu/config.toml /opt/atoma-proxy/'
 
 # Start the Atoma proxy with local profiles
 echo "Starting Atoma proxy..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma-proxy && export PLATFORM=linux/amd64 && sudo docker compose --profile cloud up -d --build'
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma-proxy && export PLATFORM=linux/amd64 && export SUI_CONFIG_PATH=/root/.sui/sui_config && sudo docker compose --profile cloud up -d --build'
 
 # Start the Atoma node with vllm-cpu and log the output
-echo "Starting Docker Compose..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64 && COMPOSE_PROFILES=vllm-cpu,no-gpu sudo docker compose up -d'
-
-# Check Docker status on Atoma Node
-echo "Checking Docker container status..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma-proxy && sudo docker ps -a'
+# echo "Starting Docker Compose..."
+# ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64 && sudo -E COMPOSE_PROFILES=vllm-cpu,no-gpu docker compose up -d'
 
 
 # Output information for GitHub actions
-echo "NODE_IP=$NODE_IP" >> $GITHUB_ENV
-echo "PROXY_IP=$PROXY_IP" >> $GITHUB_ENV
-echo "NODE_INSTANCE_ID=$NODE_INSTANCE_ID" >> $GITHUB_ENV
-echo "PROXY_INSTANCE_ID=$PROXY_INSTANCE_ID" >> $GITHUB_ENV
+# echo "NODE_IP=$NODE_IP" >> $GITHUB_ENV
+# echo "PROXY_IP=$PROXY_IP" >> $GITHUB_ENV
+# echo "NODE_INSTANCE_ID=$NODE_INSTANCE_ID" >> $GITHUB_ENV
+# echo "PROXY_INSTANCE_ID=$PROXY_INSTANCE_ID" >> $GITHUB_ENV
 
 
 # Insert the node url into the proxy's database

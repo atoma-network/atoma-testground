@@ -18,4 +18,4 @@ mkdir -p /opt/atoma
 cd /opt/atoma
 
 # Clone your repository with the docker-compose files
-git clone -b mc/chore/add-new-inference-image https://github.com/maschad/atoma-node.git .
+git clone https://github.com/atoma-network/atoma-node.git .
