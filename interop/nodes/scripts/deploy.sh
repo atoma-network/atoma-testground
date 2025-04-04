@@ -2,7 +2,7 @@
 set -e
 
 # Variables
-REGION="us-east-2"
+REGION="us-west-2"
 # NODE_INSTANCE_TYPE="g4dn.2xlarge"  # GPU instance with NVIDIA T4 GPU for ML workloads
 NODE_INSTANCE_TYPE="c5.2xlarge"  # CPU instance
 PROXY_INSTANCE_TYPE="c5.2xlarge"  # Sufficient for proxy
@@ -81,12 +81,16 @@ PROXY_INSTANCE_ID=$(aws ec2 run-instances \
 echo "Waiting for instances to be running..."
 aws ec2 wait instance-running --instance-ids $NODE_INSTANCE_ID $PROXY_INSTANCE_ID
 
+# Save instance IDs for cleanup
+echo "$NODE_INSTANCE_ID $PROXY_INSTANCE_ID" > instance_ids.txt
+
 # Get public IPs
 NODE_IP=$(aws ec2 describe-instances --instance-ids $NODE_INSTANCE_ID --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
 PROXY_IP=$(aws ec2 describe-instances --instance-ids $PROXY_INSTANCE_ID --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
 
 echo "Atoma Node IP: $NODE_IP"
 echo "Atoma Proxy IP: $PROXY_IP"
+
 
 # Wait a bit for the instances to be ready for SSH
 echo "Waiting for SSH to be available..."
@@ -96,6 +100,11 @@ sleep 30
 echo "Copying configuration files to node instance..."
 scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem .env ubuntu@$NODE_IP:/home/ubuntu/
 scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem config.toml ubuntu@$NODE_IP:/home/ubuntu/
+
+# Update config.toml with PROXY_IP
+echo "Updating config.toml with PROXY_IP..."
+sed -i "s|/ip4/213.130.147.75/tcp/4001|/ip4/$PROXY_IP/tcp/4001|g" config.toml
+sed -i "s|/ip4/213.130.147.75/udp/4001/quic-v1|/ip4/$PROXY_IP/udp/4001/quic-v1|g" config.toml
 
 # Copy the proxy environment variables and config to the proxy instance
 echo "Copying proxy environment variables and config to proxy instance..."
@@ -116,15 +125,13 @@ echo "Starting Atoma proxy..."
 ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma-proxy && export PLATFORM=linux/amd64 && sudo docker compose --profile cloud up -d --build'
 
 # Start the Atoma node with vllm-cpu and log the output
-# echo "Starting Docker Compose..."
-# ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64 && COMPOSE_PROFILES=mistralrs-cpu,non-confidential sudo docker compose up -d'
+echo "Starting Docker Compose..."
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64 && COMPOSE_PROFILES=vllm-cpu,no-gpu sudo docker compose up -d'
 
 # Check Docker status on Atoma Node
 echo "Checking Docker container status..."
 ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma-proxy && sudo docker ps -a'
 
-# Save instance IDs for cleanup
-echo "$NODE_INSTANCE_ID $PROXY_INSTANCE_ID" > instance_ids.txt
 
 # Output information for GitHub actions
 echo "NODE_IP=$NODE_IP" >> $GITHUB_ENV

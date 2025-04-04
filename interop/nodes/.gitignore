@@ -16,3 +16,9 @@ atoma-*/sui.aliases
 config.proxy.toml
 config.toml
 cursor.toml
+data/
+logs/
+sui_config/
+sui.aliases
+sui.keystore
+sui_config/
