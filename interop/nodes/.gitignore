@@ -11,3 +11,14 @@ atoma-*/sui_config
 atoma-*/sui.keystore
 atoma-*/sui.aliases
 */atoma-key.pem
+.env
+.proxy.env
+config.proxy.toml
+config.toml
+cursor.toml
+data/
+logs/
+sui_config/
+sui.aliases
+sui.keystore
+sui_config/

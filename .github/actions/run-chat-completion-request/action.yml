@@ -5,25 +5,33 @@ inputs:
   api_key:
     description: "API key for authentication"
     required: true
-  api_url:
-    description: "API URL endpoint"
-    required: true
-  sui_config:
-    description: "Sui config"
-    required: true
-  sui_keypair:
-    description: "Sui keypair"
-    required: true
 
 runs:
   using: "composite"
   steps:
-    - name: Setup Sui Config
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up AWS CLI
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: us-west-2
+
+    - name: Make scripts executable
       shell: bash
+      working-directory: interop/nodes/scripts
       run: |
-        mkdir -p ./sui_config
-        echo "${{ inputs.SUI_CONFIG }}" > ./sui_config/client.yaml
-        echo "${{ inputs.SUI_KEYPAIR }}" > ./sui_config/sui.keystore
+        chmod +x deploy.sh
+        chmod +x teardown.sh
+        chmod +x node_setup.sh
+        chmod +x proxy_setup.sh
+
+    - name: Deploy infrastructure
+      shell: bash
+      working-directory: interop/nodes/scripts
+      run: ./deploy.sh
 
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -46,7 +54,7 @@ runs:
       shell: bash
       env:
         ATOMA_API_KEY: ${{ inputs.api_key }}
-        ATOMA_API_URL: ${{ inputs.api_url }}
+        ATOMA_API_URL: ${{ env.PROXY_IP }}
       working-directory: interop/runner
       run: npm run e2e-test
 
@@ -61,3 +69,7 @@ runs:
         echo -e "\n=== Atoma Proxy Logs ==="
         cd ../atoma-proxy
         docker compose logs
+
+    - name: Teardown infrastructure
+      shell: bash
+      run: ./teardown.sh
