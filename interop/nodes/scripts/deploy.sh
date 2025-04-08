@@ -37,14 +37,27 @@ if [ -z "$SECURITY_GROUP_ID" ]; then
   # Allow SSH
   aws ec2 authorize-security-group-ingress --no-cli-pager --group-id $SECURITY_GROUP_ID --protocol tcp --port 22 --cidr 0.0.0.0/0
 
-  # Allow Docker ports for node
+  # Allow inbound traffic for Docker ports
   aws ec2 authorize-security-group-ingress --no-cli-pager --group-id $SECURITY_GROUP_ID --protocol tcp --port 3000 --cidr 0.0.0.0/0
   aws ec2 authorize-security-group-ingress --no-cli-pager --group-id $SECURITY_GROUP_ID --protocol tcp --port 3001 --cidr 0.0.0.0/0
   aws ec2 authorize-security-group-ingress --no-cli-pager --group-id $SECURITY_GROUP_ID --protocol tcp --port 4001 --cidr 0.0.0.0/0
   aws ec2 authorize-security-group-ingress --no-cli-pager --group-id $SECURITY_GROUP_ID --protocol udp --port 4001 --cidr 0.0.0.0/0
-
-  # Allow Docker ports for proxy
   aws ec2 authorize-security-group-ingress --no-cli-pager --group-id $SECURITY_GROUP_ID --protocol tcp --port 8080-8083 --cidr 0.0.0.0/0
+  aws ec2 authorize-security-group-ingress --no-cli-pager --group-id $SECURITY_GROUP_ID --protocol udp --port 8080-8083 --cidr 0.0.0.0/0
+  aws ec2 authorize-security-group-ingress --no-cli-pager --group-id $SECURITY_GROUP_ID --protocol tcp --port 8000 --cidr 0.0.0.0/0
+  aws ec2 authorize-security-group-ingress --no-cli-pager --group-id $SECURITY_GROUP_ID --protocol tcp --port 80 --cidr 0.0.0.0/0
+
+  # Allow outbound traffic for Docker ports
+  aws ec2 authorize-security-group-egress --no-cli-pager --group-id $SECURITY_GROUP_ID --protocol tcp --port 4001 --cidr 0.0.0.0/0
+  aws ec2 authorize-security-group-egress --no-cli-pager --group-id $SECURITY_GROUP_ID --protocol udp --port 4001 --cidr 0.0.0.0/0
+  aws ec2 authorize-security-group-egress --no-cli-pager --group-id $SECURITY_GROUP_ID --protocol tcp --port 8080-8083 --cidr 0.0.0.0/0
+  aws ec2 authorize-security-group-egress --no-cli-pager --group-id $SECURITY_GROUP_ID --protocol udp --port 8080-8083 --cidr 0.0.0.0/0
+  aws ec2 authorize-security-group-egress --no-cli-pager --group-id $SECURITY_GROUP_ID --protocol tcp --port 8000 --cidr 0.0.0.0/0
+  aws ec2 authorize-security-group-egress --no-cli-pager --group-id $SECURITY_GROUP_ID --protocol tcp --port 80 --cidr 0.0.0.0/0
+
+  # Allow HTTP traffic for monitoring services
+  aws ec2 authorize-security-group-ingress --no-cli-pager --group-id $SECURITY_GROUP_ID --protocol tcp --port 9090 --cidr 0.0.0.0/0  # Prometheus
+  aws ec2 authorize-security-group-ingress --no-cli-pager --group-id $SECURITY_GROUP_ID --protocol tcp --port 30000 --cidr 0.0.0.0/0  # Grafana
 
   # Allow all traffic between instances in the security group
   aws ec2 authorize-security-group-ingress --no-cli-pager --group-id $SECURITY_GROUP_ID --protocol all --source-group $SECURITY_GROUP_ID
@@ -106,6 +119,20 @@ echo "Copying configuration files to node instance..."
 scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem .env ubuntu@$NODE_IP:/home/ubuntu/
 scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem config.toml ubuntu@$NODE_IP:/home/ubuntu/
 
+# Copy the node local key to the node instance
+echo "Copying node local key to node instance..."
+# Create data directory if it doesn't exist
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'mkdir -p /home/ubuntu/data'
+# Copy the node local key to the node instance
+scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem data/node_local_key ubuntu@$NODE_IP:/home/ubuntu/data/local_key
+
+# Copy the proxy local key to the proxy instance
+echo "Copying proxy local key to proxy instance..."
+# Create data directory if it doesn't exist
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'mkdir -p /home/ubuntu/data'
+# Copy the proxy local key to the proxy instance
+scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem data/proxy_local_key ubuntu@$PROXY_IP:/home/ubuntu/data/local_key
+
 
 # Copy the sui config to the node instance
 echo "Copying sui config to node instance..."
@@ -135,13 +162,21 @@ ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'sudo mv /home/
 echo "Moving environment variables and config to the Proxy instance..."
 ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'sudo mv /home/ubuntu/.env /opt/atoma-proxy/ && sudo mv /home/ubuntu/config.toml /opt/atoma-proxy/'
 
+# Copy the local key to the correct location on proxy
+echo "Copying local key to proxy instance..."
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'sudo mkdir -p /opt/atoma-proxy/data && sudo mv /home/ubuntu/data/* /opt/atoma-proxy/data/ && sudo chown -R root:root /opt/atoma-proxy/data'
+
+# Copy the local key to the correct location on node
+echo "Copying local key to node instance..."
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'sudo mkdir -p /opt/atoma/data && sudo mv /home/ubuntu/data/* /opt/atoma/data/ && sudo chown -R root:root /opt/atoma/data'
+
 # Start the Atoma proxy with local profiles
 echo "Starting Atoma proxy..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma-proxy && export PLATFORM=linux/amd64 && export SUI_CONFIG_PATH=/root/.sui/sui_config && sudo docker compose --profile cloud up -d --build'
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma-proxy && export PLATFORM=linux/amd64 && export ATOMA_LOG_LEVELS=debug && export SUI_CONFIG_PATH=/root/.sui/sui_config && sudo docker compose --profile cloud up -d --build'
 
 # Start the Atoma node with vllm-cpu and log the output
 echo "Starting Docker Compose..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64 && sudo -E COMPOSE_PROFILES=vllm-cpu,no-gpu docker compose up -d'
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64 && export ATOMA_LOG_LEVELS=debug && sudo -E COMPOSE_PROFILES=vllm-cpu docker compose up -d --force-recreate atoma-node-no-nvidia --build'
 
 
 # Output information for GitHub actions
