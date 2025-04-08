@@ -114,6 +114,7 @@ model = "neuralmagic/Qwen2-72B-Instruct-FP8"
 
 print_lock = asyncio.Lock()
 
+api_token = os.getenv("ATOMA_API_TOKEN")
 
 with AtomaSDK(bearer_auth=api_token) as atoma_sdk:
     semaphore = asyncio.Semaphore(20)
