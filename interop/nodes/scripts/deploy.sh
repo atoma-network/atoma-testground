@@ -104,11 +104,19 @@ PROXY_IP=$(aws ec2 describe-instances --instance-ids $PROXY_INSTANCE_ID --query 
 echo "Atoma Node IP: $NODE_IP"
 echo "Atoma Proxy IP: $PROXY_IP"
 
-# Update config.toml with PROXY_IP
-# Replace the placeholder with the actual IP address in config.toml
-sed -i '' "s|\${PROXY_IP}|$PROXY_IP|g" config.toml
-echo "Updated config.toml with PROXY_IP: $PROXY_IP"
-
+# Update config.toml with PROXY_IP in bootstrap_node_addrs
+echo "Updating config.toml with PROXY_IP in bootstrap_node_addrs: $PROXY_IP"
+# Create a temporary file with the updated content
+awk -v proxy_ip="$PROXY_IP" '
+  /bootstrap_node_addrs/ {
+    print "bootstrap_node_addrs = [ \"/ip4/" proxy_ip "/tcp/4001\", \"/ip4/" proxy_ip "/udp/4001/quic-v1\" ]"
+    next
+  }
+  { print }
+' config.toml > config.toml.tmp
+# Atomically replace the original file
+mv config.toml.tmp config.toml
+echo "Updated config.toml with PROXY_IP in bootstrap_node_addrs: $PROXY_IP"
 
 # Wait a bit for the instances to be ready for SSH
 echo "Waiting for SSH to be available..."
@@ -172,11 +180,11 @@ ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'sudo mkdir -p 
 
 # Start the Atoma proxy with local profiles
 echo "Starting Atoma proxy..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma-proxy && export PLATFORM=linux/amd64 && export ATOMA_LOG_LEVELS=debug && export SUI_CONFIG_PATH=/root/.sui/sui_config && sudo docker compose --profile cloud up -d --build'
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma-proxy && export PLATFORM=linux/amd64 && export SUI_CONFIG_PATH=/root/.sui/sui_config && sudo docker compose -f docker-compose.dev.yaml --profile cloud up -d --build'
 
 # Start the Atoma node with vllm-cpu and log the output
 echo "Starting Docker Compose..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64 && export ATOMA_LOG_LEVELS=debug && sudo -E COMPOSE_PROFILES=vllm-cpu docker compose up -d --force-recreate atoma-node-no-nvidia --build'
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64  && sudo -E COMPOSE_PROFILES=vllm-cpu docker compose up -d --force-recreate atoma-node-no-nvidia --build'
 
 
 # Output information for GitHub actions

@@ -1,14 +1,14 @@
 import { AtomaSDK } from "atoma-sdk";
+import { createAccount } from "./create-account";
 
-async function runE2ETests() {
-
+async function runE2ETests(apiKey: string) {
 	if (!process.env.ATOMA_API_KEY) {
 		throw new Error(" ATOMA_API_KEY must be set");
 	}
 
 	const sdk = new AtomaSDK({
 		serverURL: process.env.ATOMA_API_URL || "http://localhost:8081",
-		bearerAuth: process.env.ATOMA_API_KEY,
+		bearerAuth: apiKey,
 	});
 
 	try {
@@ -34,10 +34,14 @@ async function runE2ETests() {
 	}
 }
 
-runE2ETests().then(() => {
-	console.log("All tests passed successfully");
-	process.exit(0);
-}).catch((error) => {
-	console.error("Test failed:", error);
-	process.exit(1);
+createAccount(process.env.ATOMA_API_URL || "http://localhost:8081").then((apiKey) => {
+	runE2ETests(apiKey).then(() => {
+		runE2ETests(apiKey).then(() => {
+			console.log("All tests passed successfully");
+			process.exit(0);
+		}).catch((error) => {
+			console.error("Test failed:", error);
+			process.exit(1);
+		});
+	});
 });
