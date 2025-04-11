@@ -2,10 +2,6 @@ import { AtomaSDK } from "atoma-sdk";
 import { createAccount } from "./create-account";
 
 async function runE2ETests(apiKey: string) {
-	if (!process.env.ATOMA_API_KEY) {
-		throw new Error(" ATOMA_API_KEY must be set");
-	}
-
 	const sdk = new AtomaSDK({
 		serverURL: process.env.ATOMA_API_URL || "http://localhost:8081",
 		bearerAuth: apiKey,
@@ -24,6 +20,7 @@ async function runE2ETests(apiKey: string) {
 			],
 			model: "meta-llama/Llama-3.3-70B-Instruct"
 		});
+
 		console.log("Chat completion successful:", chatResponse.choices[0].message.content);
 
 		console.log("All tests passed successfully");
@@ -34,7 +31,7 @@ async function runE2ETests(apiKey: string) {
 	}
 }
 
-createAccount(process.env.ATOMA_API_URL || "http://localhost:8081").then((apiKey) => {
+getApiKey().then((apiKey) => {
 	runE2ETests(apiKey).then(() => {
 		runE2ETests(apiKey).then(() => {
 			console.log("All tests passed successfully");
