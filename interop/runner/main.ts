@@ -1,7 +1,10 @@
 import { AtomaSDK } from "atoma-sdk";
-import { createAccount } from "./create-account";
 
-async function runE2ETests(apiKey: string) {
+async function runE2ETests() {
+	const apiKey = process.env.ATOMA_API_KEY;
+	if (!apiKey) {
+		throw new Error("ATOMA_API_KEY is not set");
+	}
 	const sdk = new AtomaSDK({
 		serverURL: process.env.ATOMA_API_URL || "http://localhost:8081",
 		bearerAuth: apiKey,
@@ -18,7 +21,7 @@ async function runE2ETests(apiKey: string) {
 			messages: [
 				{ role: "user", content: "Hello, are you operational?" }
 			],
-			model: "meta-llama/Llama-3.3-70B-Instruct"
+			model: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 		});
 
 		console.log("Chat completion successful:", chatResponse.choices[0].message.content);
@@ -31,14 +34,10 @@ async function runE2ETests(apiKey: string) {
 	}
 }
 
-getApiKey().then((apiKey) => {
-	runE2ETests(apiKey).then(() => {
-		runE2ETests(apiKey).then(() => {
-			console.log("All tests passed successfully");
-			process.exit(0);
-		}).catch((error) => {
-			console.error("Test failed:", error);
-			process.exit(1);
-		});
-	});
+runE2ETests().then(() => {
+	console.log("All tests passed successfully");
+	process.exit(0);
+}).catch((error) => {
+	console.error("Test failed:", error);
+	process.exit(1);
 });

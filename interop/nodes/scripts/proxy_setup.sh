@@ -15,4 +15,4 @@ cd /opt/atoma-proxy
 
 # Clone your repository with the docker-compose files
 # Replace with your actual repository URL
-git clone -b mc/build/remove-traefik-dev https://github.com/maschad/atoma-proxy.git .
+git clone https://github.com/atoma-network/atoma-proxy.git .
