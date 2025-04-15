@@ -149,12 +149,15 @@ ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'mkdir -p ~/.su
 # Copy sui.toml to the correct location
 scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem -r sui_config/ ubuntu@$NODE_IP:~/.sui/
 
+# Copy the init.sql to the node instance# Copy database initialization script
+# echo "Copying database initialization script..."
+# scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem init.sql ubuntu@$PROXY_IP:/opt/atoma-proxy/
+
 # Copy the sui config to the proxy instance
 echo "Copying sui config to proxy instance..."
 ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'sudo mkdir -p /root/.sui'
 scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem -r sui_config/ ubuntu@$PROXY_IP:/tmp/sui_config
 ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'sudo cp -r /tmp/sui_config /root/.sui/ && sudo chown -R root:root /root/.sui'
-
 
 # Copy the proxy environment variables and config to the proxy instance
 echo "Copying proxy environment variables and config to proxy instance..."
@@ -184,7 +187,7 @@ ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma
 
 # Start the Atoma node with vllm-cpu and log the output
 echo "Starting Docker Compose..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64  && sudo -E COMPOSE_PROFILES=vllm-cpu docker compose up -d --force-recreate atoma-node-no-nvidia --build'
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64  && sudo -E COMPOSE_PROFILES=vllm-cpu,no-gpu docker compose -f docker-compose.dev.yaml up -d'
 
 
 # Output information for GitHub actions
@@ -195,6 +198,5 @@ ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma 
 
 
 # Insert the node url into the proxy's database
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma-proxy && sudo docker exec -it atoma-proxy-db-1 psql -U postgres -d atoma -c "INSERT INTO nodes (url) VALUES (\"$NODE_IP\");"'
-
+# ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U postgres -d atoma -c \"SELECT update_node_address('$NODE_IP');\""
 
