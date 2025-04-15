@@ -17,16 +17,14 @@ async function runE2ETests() {
 		console.log("Health check passed:", health.message);
 
 		// Test chat completions
-		const chatResponse = await sdk.chat.createStream({
+		const chatResponse = await sdk.chat.create({
 			messages: [
 				{ role: "user", content: "Hello, are you operational?" }
 			],
 			model: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 		});
 
-		for await (const chunk of chatResponse) {
-			console.log("chunk", chunk);
-		}
+		console.log("Chat response:", chatResponse.choices[0].message.content);
 
 		console.log("All tests passed successfully");
 		process.exit(0);
