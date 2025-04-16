@@ -8,10 +8,10 @@
     "concurrency": "tsx concurrency/index.ts"
   },
   "dependencies": {
-    "@mysten/sui": "^1.26.1",
     "atoma-sdk": "0.1.1",
+    "@mysten/sui": "^1.27.1",
     "axios": "^1.8.4",
     "tsx": "^4.19.3",
-    "typescript": "^5.8.2"
+    "typescript": "^5.8.3"
   }
 }
