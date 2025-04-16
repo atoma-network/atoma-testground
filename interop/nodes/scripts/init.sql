@@ -12,14 +12,26 @@ END;
 
 $ $ LANGUAGE plpgsql;
 
--- Insert initial API token
+-- Create a function to initialize the database with required data
+CREATE
+OR REPLACE FUNCTION initialize_database(node_ip text, api_token text) RETURNS void AS $ $ BEGIN -- Update node address
+PERFORM update_node_address(node_ip);
+
+-- Insert initial API token if it doesn't exist
 INSERT INTO
 	api_tokens (user_id, token, name)
 VALUES
-	(1, '3VByNX7b1SAEkLCQkJkIPnidBSUKX2w', 'chad') ON CONFLICT DO NOTHING;
+	(1, api_token, 'chad') ON CONFLICT (user_id, token) DO NOTHING;
 
--- Insert initial balance
+-- Insert initial balance if it doesn't exist
 INSERT INTO
 	balance (user_id, usdc_balance)
 VALUES
-	(1, 100000000000) ON CONFLICT DO NOTHING;
+	(1, 10000000000000) ON CONFLICT (user_id) DO NOTHING;
+
+END;
+
+$ $ LANGUAGE plpgsql;
+
+-- Note: The actual initialization will be called from the deployment script
+-- with the appropriate parameters

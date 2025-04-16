@@ -149,9 +149,9 @@ ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'mkdir -p ~/.su
 # Copy sui.toml to the correct location
 scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem -r sui_config/ ubuntu@$NODE_IP:~/.sui/
 
-# Copy the init.sql to the node instance# Copy database initialization script
-# echo "Copying database initialization script..."
-# scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem init.sql ubuntu@$PROXY_IP:/opt/atoma-proxy/
+# Copy the init.sql to the proxy instance
+echo "Copying database initialization script..."
+scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem init.sql ubuntu@$PROXY_IP:/home/ubuntu/
 
 # Copy the sui config to the proxy instance
 echo "Copying sui config to proxy instance..."
@@ -181,22 +181,31 @@ ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'sudo mkdir -p
 echo "Copying local key to node instance..."
 ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'sudo mkdir -p /opt/atoma/data && sudo mv /home/ubuntu/data/* /opt/atoma/data/ && sudo chown -R root:root /opt/atoma/data'
 
+# Copy the init.sql to the proxy instance
+echo "Copying init.sql to proxy instance..."
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'sudo mv /home/ubuntu/init.sql /opt/atoma-proxy/'
 # Start the Atoma proxy with local profiles
 echo "Starting Atoma proxy..."
 ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma-proxy && export PLATFORM=linux/amd64 && export SUI_CONFIG_PATH=/root/.sui/sui_config && sudo docker compose -f docker-compose.dev.yaml --profile cloud up -d --build'
 
-# Start the Atoma node with vllm-cpu and log the output
+# Start the Atoma node with mistralrs-cpu and log the output
 echo "Starting Docker Compose..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64  && sudo -E COMPOSE_PROFILES=vllm-cpu,no-gpu docker compose -f docker-compose.dev.yaml up -d'
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64  && sudo -E COMPOSE_PROFILES=no-gpu,chat_completions_mistralrs_cpu docker compose -f docker-compose.dev.yaml up -d'
 
+# Wait for databases to be ready
+echo "Waiting for databases to be ready..."
+sleep 30
+
+# Initialize the proxy database using the init.sql script
+echo "Initializing proxy database..."
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec -i atoma-proxy-db-1 psql -U atoma -d atoma -f /opt/atoma-proxy/init.sql"
+
+# Call the initialization function with the node IP and API token
+echo "Running database initialization function..."
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec -i atoma-proxy-db-1 psql -U atoma -d atoma -c \"SELECT initialize_database('$NODE_IP', '$API_TOKEN');\""
 
 # Output information for GitHub actions
 # echo "NODE_IP=$NODE_IP" >> $GITHUB_ENV
 # echo "PROXY_IP=$PROXY_IP" >> $GITHUB_ENV
 # echo "NODE_INSTANCE_ID=$NODE_INSTANCE_ID" >> $GITHUB_ENV
 # echo "PROXY_INSTANCE_ID=$PROXY_INSTANCE_ID" >> $GITHUB_ENV
-
-
-# Insert the node url into the proxy's database
-# ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U postgres -d atoma -c \"SELECT update_node_address('$NODE_IP');\""
-
