@@ -30,4 +30,5 @@ mkdir -p /opt/atoma
 cd /opt/atoma
 
 # Clone your repository with the docker-compose files
+# TODO: Remove this once we have a proper release
 git clone -b mc/build/testground-changes https://github.com/maschad/atoma-node.git .
