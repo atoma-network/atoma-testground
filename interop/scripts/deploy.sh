@@ -96,7 +96,6 @@ aws ec2 wait instance-running --instance-ids $NODE_INSTANCE_ID $PROXY_INSTANCE_I
 
 # Save instance IDs for cleanup
 echo "$NODE_INSTANCE_ID $PROXY_INSTANCE_ID" > instance_ids.txt
-echo "$PROXY_INSTANCE_ID" > instance_ids.txt
 
 # Get public IPs
 NODE_IP=$(aws ec2 describe-instances --instance-ids $NODE_INSTANCE_ID --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
@@ -204,8 +203,7 @@ ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma
 
 # Then, call the initialization function with the parameters
 echo "Initializing database with node IP and API token..."
-# ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c \"SELECT initialize_database('$NODE_IP', '$ATOMA_API_KEY');\""
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c \"SELECT initialize_database('$NODE_IP', '3VByNX7b1SAEkLCQkJkIPnidBSUKX2w');\""
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c \"SELECT initialize_database('$NODE_IP', '$ATOMA_API_KEY');\""
 
 # Output information for GitHub actions
 # echo "NODE_IP=$NODE_IP" >> $GITHUB_ENV
