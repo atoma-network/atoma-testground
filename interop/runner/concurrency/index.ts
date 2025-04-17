@@ -65,16 +65,16 @@ async function processBatch(
 			const prompt = `What is the capital of Jamaica?`;
 			const totalTokens = await singleRequest(prompt);
 			console.log(totalTokens);
+			totalTokensSum += totalTokens; // Add to the accumulated total
 
 			// Sleep for a random time before sending the next request
 			const sleepDuration = getRandomSleepTime(sleepTime);
 			await setTimeout(sleepDuration);
-			return totalTokens;
 		} catch (error) {
 			console.error(error);
 		}
 	}
-	return 0;
+	return totalTokensSum; // Return the accumulated total after the loop
 }
 
 /**
