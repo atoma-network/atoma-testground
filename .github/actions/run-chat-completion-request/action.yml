@@ -11,6 +11,14 @@ inputs:
   api_key:
     description: "API key for authentication"
     required: true
+  node_branch:
+    description: "Branch to use for atoma-node repository"
+    required: false
+    default: "main"
+  proxy_branch:
+    description: "Branch to use for atoma-proxy repository"
+    required: false
+    default: "main"
 
 runs:
   using: "composite"
@@ -32,6 +40,8 @@ runs:
         SUI_KEYSTORE: ${{ secrets.SUI_KEYSTORE }}
         NODE_LOCAL_KEY: ${{ secrets.NODE_LOCAL_KEY }}
         PROXY_LOCAL_KEY: ${{ secrets.PROXY_LOCAL_KEY }}
+        NODE_BRANCH: ${{ inputs.node_branch }}
+        PROXY_BRANCH: ${{ inputs.proxy_branch }}
       run: |
         chmod +x create_files.sh
         ./create_files.sh
