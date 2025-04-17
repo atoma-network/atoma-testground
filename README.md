@@ -20,6 +20,7 @@ All components are containerized using Docker and deployed on cloud infrastructu
 ### Important Prerequisites
 
 - **USDC Wallet Balance**: The node's Sui wallet must have sufficient USDC balance to purchase stacks. This is a critical requirement for the infrastructure setup to succeed.
+- **Branch Configuration**: **To run a specific branch, you must set the branch name in the `node_setup` and/or `proxy_setup` scripts. This configuration will be handled via GitHub Action inputs in the future.**
 
 ## Testing Components
 
