@@ -5,8 +5,11 @@ async function runE2ETests() {
 	if (!apiKey) {
 		throw new Error("ATOMA_API_KEY is not set");
 	}
+	if (!process.env.ATOMA_API_URL) {
+		throw new Error("ATOMA_API_URL is not set");
+	}
 	const sdk = new AtomaSDK({
-		serverURL: process.env.ATOMA_API_URL || "http://localhost:8081",
+		serverURL: process.env.ATOMA_API_URL,
 		bearerAuth: apiKey,
 	});
 

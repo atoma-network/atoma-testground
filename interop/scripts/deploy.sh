@@ -1,6 +1,9 @@
 #!/bin/bash
 set -e
 
+# Load environment variables
+source .env
+
 # Variables
 REGION="us-west-2"
 NODE_INSTANCE_TYPE="g4dn.2xlarge"  # GPU instance with NVIDIA T4 GPU for ML workloads
@@ -92,13 +95,15 @@ PROXY_INSTANCE_ID=$(aws ec2 run-instances \
   --output text)
 
 echo "Waiting for instances to be running..."
-aws ec2 wait instance-running --instance-ids $NODE_INSTANCE_ID $PROXY_INSTANCE_ID
+# aws ec2 wait instance-running --instance-ids $NODE_INSTANCE_ID $PROXY_INSTANCE_ID
+aws ec2 wait instance-running --instance-ids $PROXY_INSTANCE_ID
 
 # Save instance IDs for cleanup
-echo "$NODE_INSTANCE_ID $PROXY_INSTANCE_ID" > instance_ids.txt
+# echo "$NODE_INSTANCE_ID $PROXY_INSTANCE_ID" > instance_ids.txt
+echo "$PROXY_INSTANCE_ID" > instance_ids.txt
 
 # Get public IPs
-NODE_IP=$(aws ec2 describe-instances --instance-ids $NODE_INSTANCE_ID --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
+# NODE_IP=$(aws ec2 describe-instances --instance-ids $NODE_INSTANCE_ID --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
 PROXY_IP=$(aws ec2 describe-instances --instance-ids $PROXY_INSTANCE_ID --query "Reservations[0].Instances[0].PublicIpAddress" --output text)
 
 echo "Atoma Node IP: $NODE_IP"
@@ -114,7 +119,7 @@ awk -v proxy_ip="$PROXY_IP" '
   }
   { print }
 ' config.toml > config.toml.tmp
-# Atomically replace the original file
+Atomically replace the original file
 mv config.toml.tmp config.toml
 echo "Updated config.toml with PROXY_IP in bootstrap_node_addrs: $PROXY_IP"
 
@@ -131,7 +136,7 @@ scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem config.toml ubuntu@$NODE_IP:/ho
 echo "Copying node local key to node instance..."
 # Create data directory if it doesn't exist
 ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'mkdir -p /home/ubuntu/data'
-# Copy the node local key to the node instance
+Copy the node local key to the node instance
 scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem data/node_local_key ubuntu@$NODE_IP:/home/ubuntu/data/local_key
 
 # Copy the proxy local key to the proxy instance
@@ -166,6 +171,10 @@ scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem config.proxy.toml ubuntu@$PROXY
 
 sleep 30
 
+# Copy the init.sql to the proxy instance
+echo "Copying init.sql to proxy instance..."
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'sudo mv /home/ubuntu/init.sql /opt/atoma-proxy/'
+
 # Move files to the correct location using SSH
 echo "Moving environment variables and config to the Node instance..."
 ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'sudo mv /home/ubuntu/.env /opt/atoma/ && sudo mv /home/ubuntu/config.toml /opt/atoma/'
@@ -181,28 +190,26 @@ ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'sudo mkdir -p
 echo "Copying local key to node instance..."
 ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'sudo mkdir -p /opt/atoma/data && sudo mv /home/ubuntu/data/* /opt/atoma/data/ && sudo chown -R root:root /opt/atoma/data'
 
-# Copy the init.sql to the proxy instance
-echo "Copying init.sql to proxy instance..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'sudo mv /home/ubuntu/init.sql /opt/atoma-proxy/'
+
 # Start the Atoma proxy with local profiles
 echo "Starting Atoma proxy..."
 ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma-proxy && export PLATFORM=linux/amd64 && export SUI_CONFIG_PATH=/root/.sui/sui_config && sudo docker compose -f docker-compose.dev.yaml --profile cloud up -d --build'
 
 # Start the Atoma node with mistralrs-cpu and log the output
 echo "Starting Docker Compose..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64  && sudo -E COMPOSE_PROFILES=no-gpu,chat_completions_mistralrs_cpu docker compose -f docker-compose.dev.yaml up -d'
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64  && sudo -E COMPOSE_PROFILES=no-gpu,chat_completions_mistralrs_cpu docker compose -f docker-compose.dev.yaml up -d --build'
 
 # Wait for databases to be ready
 echo "Waiting for databases to be ready..."
-sleep 30
+sleep 100
 
-# Initialize the proxy database using the init.sql script
-echo "Initializing proxy database..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec -i atoma-proxy-db-1 psql -U atoma -d atoma -f /opt/atoma-proxy/init.sql"
+# First, create the functions
+echo "Creating database functions..."
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec -i atoma-proxy-db-1 psql -U atoma -d atoma < /opt/atoma-proxy/init.sql"
 
-# Call the initialization function with the node IP and API token
-echo "Running database initialization function..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec -i atoma-proxy-db-1 psql -U atoma -d atoma -c \"SELECT initialize_database('$NODE_IP', '$API_TOKEN');\""
+# Then, call the initialization function with the parameters
+echo "Initializing database with node IP and API token..."
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c \"SELECT initialize_database('$NODE_IP', '$ATOMA_API_KEY');\""
 
 # Output information for GitHub actions
 # echo "NODE_IP=$NODE_IP" >> $GITHUB_ENV
