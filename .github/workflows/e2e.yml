@@ -23,5 +23,6 @@ jobs:
       - name: Run Chat Completion e2e Test
         uses: ./.github/actions/run-chat-completion-request
         with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           api_key: ${{ secrets.ATOMA_API_KEY }}
-          api_url: ${{ secrets.ATOMA_API_URL }}

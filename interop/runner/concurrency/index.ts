@@ -34,8 +34,6 @@ async function singleRequest(prompt: string): Promise<number> {
 		],
 	};
 
-	atomaSdk._options.timeoutMs = 2147483647;
-
 	const startTime = Date.now();
 	const chatCompletions = await atomaSdk.chat.create(chatCompletionsRequest);
 	const endTime = Date.now();
@@ -58,13 +56,14 @@ async function processBatch(
 	batchSize: number,
 	sleepTime: number,
 ): Promise<number> {
+	let totalTokensSum = 0;
 	for (let i = startIndex; i < startIndex + batchSize; i++) {
 		if (i >= 10000) break;
 
 		try {
 			const prompt = `What is the capital of Jamaica?`;
 			const totalTokens = await singleRequest(prompt);
-			console.log(totalTokens);
+			console.log('tokens used:', totalTokens);
 			totalTokensSum += totalTokens; // Add to the accumulated total
 
 			// Sleep for a random time before sending the next request
@@ -84,8 +83,8 @@ async function processBatch(
  *
  * @example
  * ```typescript
- * // Run 10,000 requests with 32 concurrent batches and 5 second sleep time
- * run(32, 5000);
+ * // Run 10,000 requests with 50 concurrent batches and 50 milliseconds sleep time
+ * run(50, 50);
  * ```
  *
  * @remarks
@@ -96,7 +95,7 @@ async function processBatch(
  *
  * @throws Will throw an error if any batch process fails
  */
-async function run(maxConcurrency: number, sleepTime: number = 5_000) {
+async function run(maxConcurrency: number, sleepTime: number = 1_000) {
 	const startTime = Date.now();
 
 	const totalRequests = 10_000;
@@ -116,9 +115,15 @@ async function run(maxConcurrency: number, sleepTime: number = 5_000) {
 	console.log(`Time taken: ${timeTaken.toFixed(2)} seconds`);
 	console.log('All requests completed');
 	console.log(`Total tokens: ${totalTokens}`);
+	console.log(`Total requests: ${totalRequests}`);
+	console.log(`Total tokens per request: ${totalTokens / totalRequests}`);
+	console.log(`Total tokens per second: ${totalTokens / timeTaken}`);
+	console.log(`Average sleep time: ${sleepTime}ms`);
+	console.log(`Average requests per second: ${totalRequests / timeTaken}`);
 }
 
+
 /*
-We run 32 requests in parallel, with a sleep time of 5 seconds between each request.
+We run 50 requests in parallel, with a sleep time of 5 milliseconds between each request.
 */
-run(32, 5_000).catch(console.error);
+run(50, 50).catch(console.error);

@@ -164,7 +164,7 @@ echo "Copying proxy environment variables and config to proxy instance..."
 scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem .proxy.env ubuntu@$PROXY_IP:/home/ubuntu/.env
 scp -o StrictHostKeyChecking=no -i $KEY_NAME.pem config.proxy.toml ubuntu@$PROXY_IP:/home/ubuntu/config.toml
 
-sleep 30
+sleep 500
 
 # Copy the init.sql to the proxy instance
 echo "Copying init.sql to proxy instance..."
@@ -191,7 +191,7 @@ ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma
 
 # Start the Atoma node with mistralrs-cpu and log the output
 echo "Starting Docker Compose..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64  && sudo -E COMPOSE_PROFILES=no-gpu,chat_completions_mistralrs_cpu docker compose -f docker-compose.dev.yaml up -d --build'
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64  && sudo -E COMPOSE_PROFILES=gpu,chat_completions_vllm docker compose -f docker-compose.dev.yaml up -d'
 
 # Wait for databases to be ready
 echo "Waiting for databases to be ready..."

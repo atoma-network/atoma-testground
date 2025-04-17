@@ -2,6 +2,12 @@ name: "Run Chat Completion Request"
 description: "Runs a chat completion request test"
 
 inputs:
+  aws-access-key-id:
+    description: "AWS access key id"
+    required: true
+  aws-secret-access-key:
+    description: "AWS secret access key"
+    required: true
   api_key:
     description: "API key for authentication"
     required: true
@@ -12,25 +18,44 @@ runs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    - name: Create config files
+      shell: bash
+      working-directory: interop/scripts
+      env:
+        CONFIG_TOML: ${{ secrets.CONFIG_TOML }}
+        CONFIG_PROXY_TOML: ${{ secrets.CONFIG_PROXY_TOML }}
+        ENV_FILE: ${{ secrets.ENV_FILE }}
+        PROXY_ENV: ${{ secrets.PROXY_ENV }}
+        ATOMA_KEY_PEM: ${{ secrets.ATOMA_KEY_PEM }}
+        SUI_CLIENT_YAML: ${{ secrets.SUI_CLIENT_YAML }}
+        SUI_ALIASES_YAML: ${{ secrets.SUI_ALIASES_YAML }}
+        SUI_KEYSTORE: ${{ secrets.SUI_KEYSTORE }}
+        NODE_LOCAL_KEY: ${{ secrets.NODE_LOCAL_KEY }}
+        PROXY_LOCAL_KEY: ${{ secrets.PROXY_LOCAL_KEY }}
+      run: |
+        chmod +x create_files.sh
+        ./create_files.sh
+
     - name: Set up AWS CLI
       uses: aws-actions/configure-aws-credentials@v1
       with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-access-key-id: ${{ inputs.aws-access-key-id }}
+        aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
         aws-region: us-west-2
 
     - name: Make scripts executable
       shell: bash
-      working-directory: interop/nodes/scripts
+      working-directory: interop/scripts
       run: |
         chmod +x deploy.sh
         chmod +x teardown.sh
         chmod +x node_setup.sh
         chmod +x proxy_setup.sh
+        chmod +x print_docker_logs.sh
 
     - name: Deploy infrastructure
       shell: bash
-      working-directory: interop/nodes/scripts
+      working-directory: interop/scripts
       run: ./deploy.sh
 
     - name: Setup Node.js
@@ -54,22 +79,25 @@ runs:
       shell: bash
       env:
         ATOMA_API_KEY: ${{ inputs.api_key }}
-        ATOMA_API_URL: ${{ env.PROXY_IP }}
+        ATOMA_API_URL: ${{ env.ATOMA_API_URL }}
       working-directory: interop/runner
       run: npm run e2e-test
 
     - name: Collect Docker logs on failure
       shell: bash
-      working-directory: interop/nodes/atoma-node
+      working-directory: interop/scripts
       if: failure()
-      run: |
-        echo "=== Atoma Node Logs ==="
-        docker compose logs
+      run: ./print_docker_logs.sh
 
-        echo -e "\n=== Atoma Proxy Logs ==="
-        cd ../atoma-proxy
-        docker compose logs
+    - name: Upload Docker logs as artifact
+      uses: actions/upload-artifact@v3
+      if: failure()
+      with:
+        name: docker-logs
+        path: interop/scripts/docker_logs_*.zip
+        retention-days: 7
 
     - name: Teardown infrastructure
       shell: bash
+      working-directory: interop/scripts
       run: ./teardown.sh
