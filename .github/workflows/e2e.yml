@@ -20,9 +20,6 @@ jobs:
     steps:
       - name: Checkout test-plans
         uses: actions/checkout@v4
-        with:
-          repository: ${{ github.repository }}
-          ref: ${{ github.ref }}
 
       - name: Run Chat Completion e2e Test
         uses: ./.github/actions/run-chat-completion-request
