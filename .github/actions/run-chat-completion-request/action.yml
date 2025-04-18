@@ -98,11 +98,8 @@ runs:
       shell: bash
       working-directory: interop/scripts
       run: |
-        chmod +x deploy.sh
-        chmod +x teardown.sh
-        chmod +x node_setup.sh
-        chmod +x proxy_setup.sh
-        chmod +x print_docker_logs.sh
+        chmod +x interop/scripts/*.sh
+        find interop -name "*.sh" -exec chmod +x {} \;
 
     - name: Deploy infrastructure
       shell: bash
