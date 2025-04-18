@@ -11,6 +11,33 @@ inputs:
   api_key:
     description: "API key for authentication"
     required: true
+  node_config:
+    description: "Node config toml file"
+    required: true
+  node_env:
+    description: "Node environment"
+    required: true
+  node_local_key:
+    description: "Node local key"
+    required: true
+  proxy_config:
+    description: "Config proxy toml file"
+    required: true
+  proxy_env:
+    description: "Proxy environment"
+    required: true
+  proxy_local_key:
+    description: "Proxy local key"
+    required: true
+  sui_aliases:
+    description: "Sui aliases"
+    required: true
+  sui_client_yaml:
+    description: "Sui client yaml file"
+    required: true
+  sui_keystore:
+    description: "Sui keystore"
+    required: true
   node_branch:
     description: "Branch to use for atoma-node repository"
     required: false
@@ -26,32 +53,46 @@ runs:
     - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Create config files
-      shell: bash
-      working-directory: interop/scripts
-      env:
-        CONFIG_TOML: ${{ secrets.CONFIG_TOML }}
-        CONFIG_PROXY_TOML: ${{ secrets.CONFIG_PROXY_TOML }}
-        ENV_FILE: ${{ secrets.ENV_FILE }}
-        PROXY_ENV: ${{ secrets.PROXY_ENV }}
-        ATOMA_KEY_PEM: ${{ secrets.ATOMA_KEY_PEM }}
-        SUI_CLIENT_YAML: ${{ secrets.SUI_CLIENT_YAML }}
-        SUI_ALIASES_YAML: ${{ secrets.SUI_ALIASES_YAML }}
-        SUI_KEYSTORE: ${{ secrets.SUI_KEYSTORE }}
-        NODE_LOCAL_KEY: ${{ secrets.NODE_LOCAL_KEY }}
-        PROXY_LOCAL_KEY: ${{ secrets.PROXY_LOCAL_KEY }}
-        NODE_BRANCH: ${{ inputs.node_branch }}
-        PROXY_BRANCH: ${{ inputs.proxy_branch }}
-      run: |
-        chmod +x create_files.sh
-        ./create_files.sh
-
-    - name: Set up AWS CLI
+    - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ inputs.aws-access-key-id }}
         aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
         aws-region: us-west-2
+
+    - name: Generate unique key pair
+      id: key-pair
+      shell: bash
+      run: |
+        # Generate a unique key name based on the GitHub run ID and workflow
+        KEY_NAME="atoma-key-${{ github.run_id }}-${{ github.workflow }}"
+        KEY_NAME="${KEY_NAME//[^a-zA-Z0-9_-]/-}" # Clean up any invalid characters
+        echo "KEY_NAME=$KEY_NAME" >> $GITHUB_ENV
+        echo "key_name=$KEY_NAME" >> $GITHUB_OUTPUT
+
+        # Create key pair and store private key
+        aws ec2 create-key-pair --key-name $KEY_NAME --query "KeyMaterial" --output text > $KEY_NAME.pem
+        chmod 400 $KEY_NAME.pem
+        echo "Key pair created: $KEY_NAME"
+
+    - name: Create config files
+      shell: bash
+      working-directory: interop/scripts
+      env:
+        NODE_CONFIG: ${{ inputs.NODE_CONFIG }}
+        NODE_ENV: ${{ inputs.NODE_ENV }}
+        NODE_LOCAL_KEY: ${{ inputs.NODE_LOCAL_KEY }}
+        PROXY_CONFIG: ${{ inputs.PROXY_CONFIG }}
+        PROXY_ENV: ${{ inputs.PROXY_ENV }}
+        SUI_ALIASES: ${{ inputs.SUI_ALIASES }}
+        SUI_CLIENT_YAML: ${{ inputs.SUI_CLIENT_YAML }}
+        SUI_KEYSTORE: ${{ inputs.SUI_KEYSTORE }}
+        PROXY_LOCAL_KEY: ${{ inputs.PROXY_LOCAL_KEY }}
+        NODE_BRANCH: ${{ inputs.node_branch }}
+        PROXY_BRANCH: ${{ inputs.proxy_branch }}
+      run: |
+        chmod +x create_files.sh
+        ./create_files.sh
 
     - name: Make scripts executable
       shell: bash

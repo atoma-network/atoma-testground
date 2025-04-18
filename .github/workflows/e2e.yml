@@ -1,8 +1,12 @@
 name: Dev Environment Test
 
-# TODO: Remember to change this to be on pushes
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
 
 jobs:
   e2e-test:
@@ -26,3 +30,10 @@ jobs:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           api_key: ${{ secrets.ATOMA_API_KEY }}
+          node_config: ${{ secrets.NODE_CONFIG }}
+          node_env: ${{ secrets.NODE_ENV }}
+          node_local_key: ${{ secrets.NODE_LOCAL_KEY }}
+          proxy_config: ${{ secrets.PROXY_CONFIG }}
+          proxy_env: ${{ secrets.PROXY_ENV }}
+          proxy_local_key: ${{ secrets.PROXY_LOCAL_KEY }}
+          sui_aliases: ${{ secrets.SUI_ALIASES }}
