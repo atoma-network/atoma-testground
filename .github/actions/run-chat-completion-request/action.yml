@@ -141,7 +141,7 @@ runs:
       run: ./print_docker_logs.sh
 
     - name: Upload Docker logs as artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: failure()
       with:
         name: docker-logs
