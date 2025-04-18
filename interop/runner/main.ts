@@ -1,18 +1,22 @@
 import { AtomaSDK } from "atoma-sdk";
 
 async function runE2ETests() {
-
-	if (!process.env.ATOMA_API_KEY) {
-		throw new Error(" ATOMA_API_KEY must be set");
+	const apiKey = process.env.ATOMA_API_KEY;
+	if (!apiKey) {
+		throw new Error("ATOMA_API_KEY is not set");
 	}
-
+	if (!process.env.ATOMA_API_URL) {
+		throw new Error("ATOMA_API_URL is not set");
+	}
 	const sdk = new AtomaSDK({
-		serverURL: process.env.ATOMA_API_URL || "http://localhost:8081",
-		bearerAuth: process.env.ATOMA_API_KEY,
+		serverURL: process.env.ATOMA_API_URL,
+		bearerAuth: apiKey,
 	});
 
 	try {
 		console.log("Running tests against:", process.env.ATOMA_API_URL);
+		const startTime = Date.now();
+
 		// Health check
 		const health = await sdk.health.health();
 		console.log("Health check passed:", health.message);
@@ -20,11 +24,16 @@ async function runE2ETests() {
 		// Test chat completions
 		const chatResponse = await sdk.chat.create({
 			messages: [
-				{ role: "user", content: "Hello, are you operational?" }
+				{ role: "user", content: "What is the capital of Jamaica?" }
 			],
-			model: "meta-llama/Llama-3.3-70B-Instruct"
+			model: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
 		});
-		console.log("Chat completion successful:", chatResponse.choices[0].message.content);
+
+		console.log("Chat response:", chatResponse.choices[0].message.content);
+
+		const endTime = Date.now();
+		const timeTaken = (endTime - startTime) / 1000;
+		console.log(`Time taken: ${timeTaken.toFixed(2)} seconds`);
 
 		console.log("All tests passed successfully");
 		process.exit(0);

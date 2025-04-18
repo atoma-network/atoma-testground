@@ -1,10 +1,8 @@
 name: Dev Environment Test
 
+# TODO: Remember to change this to be on pushes
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+  workflow_dispatch:
 
 jobs:
   e2e-test:
@@ -25,7 +23,6 @@ jobs:
       - name: Run Chat Completion e2e Test
         uses: ./.github/actions/run-chat-completion-request
         with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           api_key: ${{ secrets.ATOMA_API_KEY }}
-          api_url: ${{ vars.ATOMA_API_URL }}
-          sui_config: ${{ secrets.SUI_CONFIG }}
-          sui_keypair: ${{ secrets.SUI_KEYPAIR }}

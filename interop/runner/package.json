@@ -4,10 +4,11 @@
   "author": "Chad Nehemiah <chad@atoma.network>",
   "private": true,
   "scripts": {
-    "e2e-test": "tsx main.ts"
+    "e2e-test": "tsx main.ts",
+    "concurrency": "tsx concurrency/index.ts"
   },
   "dependencies": {
-    "@mysten/sui": "^1.27.0",
+    "@mysten/sui": "^1.27.1",
     "axios": "^1.8.4",
     "tsx": "^4.19.3",
     "typescript": "^5.8.3",
