@@ -95,8 +95,7 @@ runs:
       shell: bash
       working-directory: interop/scripts
       run: |
-        chmod +x interop/scripts/*.sh
-        find interop -name "*.sh" -exec chmod +x {} \;
+        chmod +x *.sh
 
     - name: Deploy infrastructure
       shell: bash
