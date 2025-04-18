@@ -7,7 +7,7 @@ NODE_INSTANCE_TYPE="g4dn.2xlarge"  # GPU instance with NVIDIA T4 GPU for ML work
 # NODE_INSTANCE_TYPE="c5.2xlarge"  # CPU instance
 PROXY_INSTANCE_TYPE="c5.2xlarge"  # Sufficient for proxy
 AMI_ID="ami-03f8acd418785369b"  # Ubuntu 22.04 LTS
-KEY_NAME="atoma-key"
+KEY_NAME="${KEY_NAME:-atoma-key}"  # Use the environment variable if set, or default to "atoma-key"
 SECURITY_GROUP_NAME="atoma-sg"
 VPC_ID=$(aws ec2 describe-vpcs --query "Vpcs[0].VpcId" --output text)
 

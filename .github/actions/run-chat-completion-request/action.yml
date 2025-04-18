@@ -127,19 +127,19 @@ runs:
       working-directory: interop/runner
       run: npm run e2e-test
 
-    - name: Collect Docker logs on failure
-      shell: bash
-      working-directory: interop/scripts
-      if: failure()
-      run: ./print_docker_logs.sh
+    # - name: Collect Docker logs on failure
+    #   shell: bash
+    #   working-directory: interop/scripts
+    #   if: failure()
+    #   run: ./print_docker_logs.sh
 
-    - name: Upload Docker logs as artifact
-      uses: actions/upload-artifact@v4
-      if: failure()
-      with:
-        name: docker-logs
-        path: interop/scripts/docker_logs_*.zip
-        retention-days: 7
+    # - name: Upload Docker logs as artifact
+    #   uses: actions/upload-artifact@v4
+    #   if: failure()
+    #   with:
+    #     name: docker-logs
+    #     path: interop/scripts/docker_logs_*.zip
+    #     retention-days: 7
 
     - name: Teardown infrastructure
       shell: bash
