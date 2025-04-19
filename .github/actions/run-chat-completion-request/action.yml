@@ -63,8 +63,7 @@ runs:
       working-directory: interop/scripts
       run: |
         # Generate a unique key name based on the GitHub run ID and workflow
-        KEY_NAME="atoma-key-${{ github.run_id }}-${{ github.workflow }}"
-        KEY_NAME="${KEY_NAME//[^a-zA-Z0-9_-]/-}" # Clean up any invalid characters
+        KEY_NAME="atoma-key-${{ github.run_id }}-${{ github.workflow }}.pem"
         echo "KEY_NAME=$KEY_NAME" >> $GITHUB_ENV
         echo "key_name=$KEY_NAME" >> $GITHUB_OUTPUT
 

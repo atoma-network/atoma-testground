@@ -34,3 +34,5 @@ jobs:
           proxy_env: ${{ secrets.PROXY_ENV }}
           proxy_local_key: ${{ secrets.PROXY_LOCAL_KEY }}
           sui_aliases: ${{ secrets.SUI_ALIASES }}
+          sui_client_yaml: ${{ secrets.SUI_CLIENT_YAML }}
+          sui_keystore: ${{ secrets.SUI_KEYSTORE }}
