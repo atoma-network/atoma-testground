@@ -19,7 +19,7 @@ echo "${PROXY_LOCAL_KEY}" > data/proxy_local_key
 chmod 400 data/proxy_local_key
 
 # Create .env from secret
-echo "${ENV_FILE}" > .env
+echo "${NODE_ENV}" > .env
 
 # Create .proxy.env from secret
 echo "${PROXY_ENV}" > .proxy.env
