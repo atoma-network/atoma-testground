@@ -63,9 +63,17 @@ runs:
       working-directory: interop/scripts
       run: |
         # Generate a unique key name based on the GitHub run ID and workflow
-        KEY_NAME="atoma-key-${{ github.run_id }}-${{ github.workflow }}.pem"
-        echo "KEY_NAME=$KEY_NAME" >> $GITHUB_ENV
-        echo "key_name=$KEY_NAME" >> $GITHUB_OUTPUT
+          KEY_NAME="atoma-key-${{ github.run_id }}-${{ github.workflow }}"
+          echo "KEY_NAME=$KEY_NAME" >> $GITHUB_ENV
+          echo "key_name=$KEY_NAME" >> $GITHUB_OUTPUT
+
+         # Delete the key if it already exists (in case of previous runs)
+         aws ec2 delete-key-pair --key-name $KEY_NAME || true
+
+         # Create key pair and store private key
+         aws ec2 create-key-pair --key-name $KEY_NAME --query "KeyMaterial" --output text > $KEY_NAME.pem
+         chmod 400 $KEY_NAME.pem
+         echo "Key pair created: $KEY_NAME"
 
     - name: Create config files
       shell: bash
@@ -98,7 +106,7 @@ runs:
       working-directory: interop/scripts
       run: |
         # Ensure the key is in the right place with right permissions
-        chmod 400 $KEY_NAME
+        chmod 400 $KEY_NAME.pem
 
         # Run deployment
         ./deploy.sh
@@ -166,7 +174,7 @@ runs:
         chmod +x teardown.sh
 
         # Make sure key is available with correct permissions
-        chmod 400 $KEY_NAME
+        chmod 400 $KEY_NAME.pem
 
         # Check if we have instance IDs stored, if not try to read from file
         if [ -z "$INSTANCE_IDS" ] && [ -f instance_ids.txt ]; then
