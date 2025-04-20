@@ -88,8 +88,7 @@ runs:
         SUI_CLIENT_YAML: ${{ inputs.SUI_CLIENT_YAML }}
         SUI_KEYSTORE: ${{ inputs.SUI_KEYSTORE }}
         PROXY_LOCAL_KEY: ${{ inputs.PROXY_LOCAL_KEY }}
-        NODE_BRANCH: ${{ inputs.node_branch }}
-        PROXY_BRANCH: ${{ inputs.proxy_branch }}
+
       run: |
         chmod +x create_files.sh
         ./create_files.sh
@@ -115,6 +114,9 @@ runs:
         if [ -f instance_ids.txt ]; then
           echo "INSTANCE_IDS=$(cat instance_ids.txt)" >> $GITHUB_ENV
         fi
+      env:
+        NODE_BRANCH: ${{ inputs.node_branch }}
+        PROXY_BRANCH: ${{ inputs.proxy_branch }}
 
     - name: Setup Node.js
       if: success() && steps.deploy.outcome == 'success'
