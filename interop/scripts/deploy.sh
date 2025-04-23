@@ -195,7 +195,7 @@ ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma 
 
 # Wait for databases to be ready
 echo "Waiting for databases to be ready..."
-sleep 100
+sleep 200
 
 # First, create the functions
 echo "Creating database functions..."
