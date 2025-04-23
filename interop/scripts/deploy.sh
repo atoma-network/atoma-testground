@@ -118,6 +118,12 @@ awk -v proxy_ip="$PROXY_IP" '
 mv config.toml.tmp config.toml
 echo "Updated config.toml with PROXY_IP in bootstrap_node_addrs: $PROXY_IP"
 
+# Output information for GitHub actions
+echo "NODE_IP=$NODE_IP" >> $GITHUB_ENV
+echo "PROXY_IP=$PROXY_IP" >> $GITHUB_ENV
+echo "NODE_INSTANCE_ID=$NODE_INSTANCE_ID" >> $GITHUB_ENV
+echo "PROXY_INSTANCE_ID=$PROXY_INSTANCE_ID" >> $GITHUB_ENV
+
 # Wait a bit for the instances to be ready for SSH
 echo "Waiting for SSH to be available..."
 sleep 30
@@ -187,7 +193,7 @@ ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'sudo mkdir -p 
 
 # Start the Atoma proxy with local profiles
 echo "Starting Atoma proxy..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma-proxy && export PLATFORM=linux/amd64 && export SUI_CONFIG_PATH=/root/.sui/sui_config && sudo docker compose -f docker-compose.dev.yaml --profile cloud up -d --build'
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma-proxy && export PLATFORM=linux/amd64 && export SUI_CONFIG_PATH=/root/.sui/sui_config && sudo docker compose -f docker-compose.dev.yaml --profile cloud up -d'
 
 # Start the Atoma node with mistralrs-cpu and log the output
 echo "Starting Docker Compose..."
@@ -195,7 +201,14 @@ ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma 
 
 # Wait for databases to be ready
 echo "Waiting for databases to be ready..."
-sleep 200
+for i in {1..30}; do
+  if ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c '\dt'" > /dev/null 2>&1; then
+    echo "Database is ready"
+    break
+  fi
+  echo "Waiting for database... attempt $i"
+  sleep 30
+done
 
 # First, create the functions
 echo "Creating database functions..."
@@ -204,9 +217,3 @@ ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma
 # Then, call the initialization function with the parameters
 echo "Initializing database with node IP and API token..."
 ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c \"SELECT initialize_database('$NODE_IP', '$ATOMA_API_KEY');\""
-
-# Output information for GitHub actions
-# echo "NODE_IP=$NODE_IP" >> $GITHUB_ENV
-# echo "PROXY_IP=$PROXY_IP" >> $GITHUB_ENV
-# echo "NODE_INSTANCE_ID=$NODE_INSTANCE_ID" >> $GITHUB_ENV
-# echo "PROXY_INSTANCE_ID=$PROXY_INSTANCE_ID" >> $GITHUB_ENV

@@ -115,6 +115,7 @@ runs:
           echo "INSTANCE_IDS=$(cat instance_ids.txt)" >> $GITHUB_ENV
         fi
       env:
+        ATOMA_API_KEY: ${{ inputs.api_key }}
         NODE_BRANCH: ${{ inputs.node_branch }}
         PROXY_BRANCH: ${{ inputs.proxy_branch }}
 
