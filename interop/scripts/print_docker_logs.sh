@@ -7,6 +7,14 @@ if [ ! -f "instance_ids.txt" ]; then
   exit 1
 fi
 
+# Use the KEY_NAME environment variable from the CI environment
+if [ -z "$KEY_NAME" ]; then
+  echo "Error: KEY_NAME environment variable not set"
+  exit 1
+fi
+
+echo "Using key file: $KEY_NAME.pem"
+
 # Read instance IDs from file - handle both single and double instance cases
 read -r first_id second_id < instance_ids.txt
 
@@ -38,7 +46,7 @@ collect_logs() {
   echo "Collecting logs from $instance_name ($instance_ip)..."
 
   # SSH into the instance and collect Docker logs
-  if ssh -o StrictHostKeyChecking=no -i atoma-key.pem ubuntu@"$instance_ip" "cd $instance_path && sudo docker compose ps && sudo docker compose logs" > "$log_file" 2>&1; then
+  if ssh -o StrictHostKeyChecking=no -i "$KEY_NAME.pem" ubuntu@"$instance_ip" "cd $instance_path && sudo docker compose ps && sudo docker compose logs" > "$log_file" 2>&1; then
     echo "Logs from $instance_name saved to $log_file"
     return 0
   else
