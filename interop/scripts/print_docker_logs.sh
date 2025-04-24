@@ -14,8 +14,7 @@ if [ -z "$KEY_NAME" ]; then
 fi
 
 # Get the absolute path to the key file
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-KEY_FILE="$SCRIPT_DIR/$KEY_NAME.pem"
+KEY_FILE="$KEY_NAME.pem"
 
 if [ ! -f "$KEY_FILE" ]; then
   echo "Error: Key file not found at $KEY_FILE"

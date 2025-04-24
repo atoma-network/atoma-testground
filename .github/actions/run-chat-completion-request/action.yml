@@ -127,12 +127,6 @@ runs:
         cache: "npm"
         cache-dependency-path: interop/runner/package-lock.json
 
-    - name: Build atoma-nodes
-      if: success() && steps.deploy.outcome == 'success'
-      shell: bash
-      working-directory: interop/nodes
-      run: make
-
     - name: Install dependencies
       if: success() && steps.deploy.outcome == 'success'
       shell: bash
@@ -169,26 +163,27 @@ runs:
         retention-days: 7
         if-no-files-found: warn
 
-    - name: Teardown infrastructure
-      shell: bash
-      working-directory: interop/scripts
-      if: always() # This ensures the step runs even if previous steps fail
-      run: |
-        chmod +x teardown.sh
+    # TODO: Uncomment this!!
+    # - name: Teardown infrastructure
+    #   shell: bash
+    #   working-directory: interop/scripts
+    #   if: always() # This ensures the step runs even if previous steps fail
+    #   run: |
+    #     chmod +x teardown.sh
 
-        # Make sure key is available with correct permissions
-        chmod 400 $KEY_NAME.pem
+    #     # Make sure key is available with correct permissions
+    #     chmod 400 $KEY_NAME.pem
 
-        # Check if we have instance IDs stored, if not try to read from file
-        if [ -z "$INSTANCE_IDS" ] && [ -f instance_ids.txt ]; then
-          export INSTANCE_IDS=$(cat instance_ids.txt)
-        fi
+    #     # Check if we have instance IDs stored, if not try to read from file
+    #     if [ -z "$INSTANCE_IDS" ] && [ -f instance_ids.txt ]; then
+    #       export INSTANCE_IDS=$(cat instance_ids.txt)
+    #     fi
 
-        # Run teardown script
-        ./teardown.sh
+    #     # Run teardown script
+    #     ./teardown.sh
 
-        # Additional cleanup of AWS resources
-        if [ -n "$KEY_NAME" ]; then
-          echo "Deleting key pair $KEY_NAME..."
-          aws ec2 delete-key-pair --key-name $KEY_NAME || true
-        fi
+    #     # Additional cleanup of AWS resources
+    #     if [ -n "$KEY_NAME" ]; then
+    #       echo "Deleting key pair $KEY_NAME..."
+    #       aws ec2 delete-key-pair --key-name $KEY_NAME || true
+    #     fi
