@@ -13,7 +13,16 @@ if [ -z "$KEY_NAME" ]; then
   exit 1
 fi
 
-echo "Using key file: $KEY_NAME.pem"
+# Get the absolute path to the key file
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+KEY_FILE="$SCRIPT_DIR/$KEY_NAME.pem"
+
+if [ ! -f "$KEY_FILE" ]; then
+  echo "Error: Key file not found at $KEY_FILE"
+  exit 1
+fi
+
+echo "Using key file: $KEY_FILE"
 
 # Read instance IDs from file - handle both single and double instance cases
 read -r first_id second_id < instance_ids.txt
@@ -46,7 +55,7 @@ collect_logs() {
   echo "Collecting logs from $instance_name ($instance_ip)..."
 
   # SSH into the instance and collect Docker logs
-  if ssh -o StrictHostKeyChecking=no -i "$KEY_NAME.pem" ubuntu@"$instance_ip" "cd $instance_path && sudo docker compose ps && sudo docker compose logs" > "$log_file" 2>&1; then
+  if ssh -o StrictHostKeyChecking=no -i "$KEY_FILE" ubuntu@"$instance_ip" "cd $instance_path && sudo docker compose ps && sudo docker compose logs" > "$log_file" 2>&1; then
     echo "Logs from $instance_name saved to $log_file"
     return 0
   else
