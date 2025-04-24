@@ -199,16 +199,34 @@ ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma
 echo "Starting Docker Compose..."
 ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64  && sudo -E COMPOSE_PROFILES=gpu,chat_completions_vllm docker compose -f docker-compose.dev.yaml up -d'
 
-# Wait for databases to be ready
-echo "Waiting for databases to be ready..."
-for i in {1..30}; do
-  if ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c '\dt'" > /dev/null 2>&1; then
-    echo "Database is ready"
+# Wait for proxy service to be up and migrations to be complete
+echo "Waiting for proxy service and migrations..."
+max_attempts=60  # Increased max attempts to give more time
+for i in {1..60}; do
+  # First check if proxy container is running
+  proxy_status=$(ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker compose ps atoma-proxy-cloud --format json" 2>/dev/null)
+  echo "Proxy status: $proxy_status"
+
+  # Then check if database has the required tables
+  if echo "$proxy_status" | grep -q "running" && \
+     ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c '\d nodes' > /dev/null 2>&1"; then
+    echo "✓ Proxy service is running and migrations are complete"
     break
   fi
-  echo "Waiting for database... attempt $i"
+
+  if [ $i -eq $max_attempts ]; then
+    echo "WARNING: Maximum wait time reached. Proceeding anyway..."
+  fi
+
+  echo "Waiting for proxy service and migrations... attempt $i/$max_attempts"
   sleep 30
 done
+
+# Verify the state before proceeding
+if ! ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c '\d nodes'" > /dev/null 2>&1; then
+  echo "ERROR: Database migrations did not complete successfully"
+  exit 1
+fi
 
 # First, create the functions
 echo "Creating database functions..."
