@@ -13,9 +13,9 @@ echo "${SUI_ALIASES}" > sui_config/sui.aliases
 echo "${SUI_KEYSTORE}" > sui_config/sui.keystore
 
 mkdir -p data
-echo "${NODE_LOCAL_KEY}" > data/node_local_key
+echo "${NODE_LOCAL_KEY}" | base64 --decode > data/node_local_key
 chmod 400 data/node_local_key
-echo "${PROXY_LOCAL_KEY}" > data/proxy_local_key
+echo "${PROXY_LOCAL_KEY}" | base64 --decode > data/proxy_local_key
 chmod 400 data/proxy_local_key
 
 # Create .env from secret
