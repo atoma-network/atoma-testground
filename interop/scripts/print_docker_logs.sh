@@ -54,11 +54,64 @@ collect_logs() {
   echo "Collecting logs from $instance_name ($instance_ip)..."
 
   # SSH into the instance and collect Docker logs
-  if ssh -o StrictHostKeyChecking=no -i "$KEY_FILE" ubuntu@"$instance_ip" "cd $instance_path && sudo docker compose ps && sudo docker compose logs" > "$log_file" 2>&1; then
-    echo "Logs from $instance_name saved to $log_file"
-    return 0
+  if [ "$instance_name" = "node" ]; then
+    # For node, get logs from all relevant services
+    if ssh -o StrictHostKeyChecking=no -i "$KEY_FILE" ubuntu@"$instance_ip" "cd $instance_path && \
+      echo '=== Docker Compose Status ===' && \
+      sudo docker compose ps -a && \
+      echo -e '\n=== Atoma Node Logs ===' && \
+      sudo docker compose logs -f docker-compose.dev.yaml atoma-node && \
+      echo -e '\n=== Postgres Logs ===' && \
+      sudo docker compose logs -f docker-compose.dev.yaml postgres-db && \
+      echo -e '\n=== Prometheus Logs ===' && \
+      sudo docker compose logs -f docker-compose.dev.yaml prometheus && \
+      echo -e '\n=== Grafana Logs ===' && \
+      sudo docker compose logs -f docker-compose.dev.yaml grafana && \
+      echo -e '\n=== Loki Logs ===' && \
+      sudo docker compose logs -f docker-compose.dev.yaml loki && \
+      echo -e '\n=== Tempo Logs ===' && \
+      sudo docker compose logs -f docker-compose.dev.yaml tempo && \
+      echo -e '\n=== OTEL Collector Logs ===' && \
+      sudo docker compose logs -f docker-compose.dev.yaml otel-collector && \
+      echo -e '\n=== VLLM Logs ===' && \
+      sudo docker compose logs -f docker-compose.dev.yaml vllm1 vllm2 vllm3 vllm4 vllm5 vllm6 vllm7 vllm8 vllm-cpu vllm-rocm" > "$log_file" 2>&1; then
+      echo "Logs from $instance_name saved to $log_file"
+      return 0
+    else
+      echo "Warning: Failed to collect logs from $instance_name"
+      return 1
+    fi
+  elif [ "$instance_name" = "proxy" ]; then
+    # For proxy, get logs from all cloud profile services
+    if ssh -o StrictHostKeyChecking=no -i "$KEY_FILE" ubuntu@"$instance_ip" "cd $instance_path && \
+      echo '=== Docker Compose Status ===' && \
+      sudo docker compose ps -a && \
+      echo -e '\n=== Proxy Cloud Logs ===' && \
+      sudo docker compose logs -f docker-compose.dev.yaml atoma-proxy-cloud && \
+      echo -e '\n=== Database Logs ===' && \
+      sudo docker compose logs -f docker-compose.dev.yaml db && \
+      echo -e '\n=== Backend Logs ===' && \
+      sudo docker compose logs -f docker-compose.dev.yaml backend && \
+      echo -e '\n=== Frontend Logs ===' && \
+      sudo docker compose logs -f docker-compose.dev.yaml frontend && \
+      echo -e '\n=== OTEL Collector Logs ===' && \
+      sudo docker compose logs -f docker-compose.dev.yaml otel-collector && \
+      echo -e '\n=== Prometheus Logs ===' && \
+      sudo docker compose logs -f docker-compose.dev.yaml prometheus && \
+      echo -e '\n=== Grafana Logs ===' && \
+      sudo docker compose logs -f docker-compose.dev.yaml grafana && \
+      echo -e '\n=== Loki Logs ===' && \
+      sudo docker compose logs -f docker-compose.dev.yaml loki && \
+      echo -e '\n=== Tempo Logs ===' && \
+      sudo docker compose logs -f docker-compose.dev.yaml tempo" > "$log_file" 2>&1; then
+      echo "Logs from $instance_name saved to $log_file"
+      return 0
+    else
+      echo "Warning: Failed to collect logs from $instance_name"
+      return 1
+    fi
   else
-    echo "Warning: Failed to collect logs from $instance_name"
+    echo "Warning: Unknown instance type $instance_name"
     return 1
   fi
 }
