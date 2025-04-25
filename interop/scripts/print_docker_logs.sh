@@ -60,21 +60,21 @@ collect_logs() {
       echo '=== Docker Compose Status ===' && \
       sudo docker compose ps -a && \
       echo -e '\n=== Atoma Node Logs ===' && \
-      sudo docker compose logs -f docker-compose.dev.yaml atoma-node && \
+      sudo docker compose -f docker-compose.dev.yaml logs atoma-node && \
       echo -e '\n=== Postgres Logs ===' && \
-      sudo docker compose logs -f docker-compose.dev.yaml postgres-db && \
+      sudo docker compose -f docker-compose.dev.yaml logs postgres-db && \
       echo -e '\n=== Prometheus Logs ===' && \
-      sudo docker compose logs -f docker-compose.dev.yaml prometheus && \
+      sudo docker compose -f docker-compose.dev.yaml logs prometheus && \
       echo -e '\n=== Grafana Logs ===' && \
-      sudo docker compose logs -f docker-compose.dev.yaml grafana && \
+      sudo docker compose -f docker-compose.dev.yaml logs grafana && \
       echo -e '\n=== Loki Logs ===' && \
-      sudo docker compose logs -f docker-compose.dev.yaml loki && \
+      sudo docker compose -f docker-compose.dev.yaml logs loki && \
       echo -e '\n=== Tempo Logs ===' && \
-      sudo docker compose logs -f docker-compose.dev.yaml tempo && \
+      sudo docker compose -f docker-compose.dev.yaml logs tempo && \
       echo -e '\n=== OTEL Collector Logs ===' && \
-      sudo docker compose logs -f docker-compose.dev.yaml otel-collector && \
+      sudo docker compose -f docker-compose.dev.yaml logs otel-collector && \
       echo -e '\n=== VLLM Logs ===' && \
-      sudo docker compose logs -f docker-compose.dev.yaml vllm1 vllm2 vllm3 vllm4 vllm5 vllm6 vllm7 vllm8 vllm-cpu vllm-rocm" > "$log_file" 2>&1; then
+      sudo docker compose -f docker-compose.dev.yaml logs vllm1 vllm2 vllm3 vllm4 vllm5 vllm6 vllm7 vllm8 vllm-cpu vllm-rocm" > "$log_file" 2>&1; then
       echo "Logs from $instance_name saved to $log_file"
       return 0
     else
@@ -87,23 +87,23 @@ collect_logs() {
       echo '=== Docker Compose Status ===' && \
       sudo docker compose ps -a && \
       echo -e '\n=== Proxy Cloud Logs ===' && \
-      sudo docker compose logs -f docker-compose.dev.yaml atoma-proxy-cloud && \
+      sudo docker compose -f docker-compose.dev.yaml logs  atoma-proxy-cloud && \
       echo -e '\n=== Database Logs ===' && \
-      sudo docker compose logs -f docker-compose.dev.yaml db && \
+      sudo docker compose -f docker-compose.dev.yaml logs db && \
       echo -e '\n=== Backend Logs ===' && \
-      sudo docker compose logs -f docker-compose.dev.yaml backend && \
+      sudo docker compose -f docker-compose.dev.yaml logs backend && \
       echo -e '\n=== Frontend Logs ===' && \
-      sudo docker compose logs -f docker-compose.dev.yaml frontend && \
+      sudo docker compose -f docker-compose.dev.yaml logs frontend && \
       echo -e '\n=== OTEL Collector Logs ===' && \
-      sudo docker compose logs -f docker-compose.dev.yaml otel-collector && \
+      sudo docker compose -f docker-compose.dev.yaml logs otel-collector && \
       echo -e '\n=== Prometheus Logs ===' && \
-      sudo docker compose logs -f docker-compose.dev.yaml prometheus && \
+      sudo docker compose -f docker-compose.dev.yaml logs prometheus && \
       echo -e '\n=== Grafana Logs ===' && \
-      sudo docker compose logs -f docker-compose.dev.yaml grafana && \
+      sudo docker compose -f docker-compose.dev.yaml logs grafana && \
       echo -e '\n=== Loki Logs ===' && \
-      sudo docker compose logs -f docker-compose.dev.yaml loki && \
+      sudo docker compose -f docker-compose.dev.yaml logs loki && \
       echo -e '\n=== Tempo Logs ===' && \
-      sudo docker compose logs -f docker-compose.dev.yaml tempo" > "$log_file" 2>&1; then
+      sudo docker compose -f docker-compose.dev.yaml logs tempo" > "$log_file" 2>&1; then
       echo "Logs from $instance_name saved to $log_file"
       return 0
     else
