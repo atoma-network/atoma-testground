@@ -193,7 +193,7 @@ ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'sudo mkdir -p 
 
 # Start the Atoma proxy with local profiles
 echo "Starting Atoma proxy..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma-proxy && export PLATFORM=linux/amd64 && export SUI_CONFIG_PATH=/root/.sui/sui_config && sudo docker compose -f docker-compose.dev.yaml --profile cloud up -d'
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma-proxy && export PLATFORM=linux/amd64 && export SUI_CONFIG_PATH=/root/.sui/sui_config && sudo docker compose -f docker-compose.dev.yaml --profile cloud up -d --build'
 
 # Start the Atoma node with mistralrs-cpu and log the output
 echo "Starting Docker Compose..."
