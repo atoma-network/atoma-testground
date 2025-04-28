@@ -235,3 +235,5 @@ ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma
 # Then, call the initialization function with the parameters
 echo "Initializing database with node IP and API token..."
 ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c \"SELECT initialize_database('$NODE_IP', '$ATOMA_API_KEY');\""
+
+echo "ATOMA_API_URL=http://$PROXY_IP:8080" >> $GITHUB_ENV
