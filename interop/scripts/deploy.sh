@@ -209,7 +209,9 @@ for i in {1..60}; do
 
   # Then check if database has the required tables
   if echo "$proxy_status" | grep -q "running" && \
-     ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c '\d nodes' > /dev/null 2>&1"; then
+    ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c '\d nodes' > /dev/null 2>&1" && \
+    ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c '\d balance' > /dev/null 2>&1" && \
+    ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c '\d api_tokens' > /dev/null 2>&1"; then
     echo "✓ Proxy service is running and migrations are complete"
     break
   fi
@@ -237,7 +239,3 @@ echo "Initializing database with node IP and API token..."
 ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c \"SELECT initialize_database('$NODE_IP', '$ATOMA_API_KEY');\" || echo 'Database initialization failed'"
 
 echo "ATOMA_API_URL=http://$PROXY_IP:8080" >> $GITHUB_ENV
-
-# Verify the API token
-echo "Verifying API token..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c 'SELECT * FROM api_tokens;'"
