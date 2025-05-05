@@ -33,8 +33,6 @@ cd /opt/atoma
 
 # Clone your repository with the docker-compose files
 # Use the branch specified in the environment variable, defaulting to main if not set
-# BRANCH=${NODE_BRANCH:-main}
-# git clone -b $BRANCH https://github.com/atoma-network/atoma-node.git .
+BRANCH=${NODE_BRANCH:-main}
+git clone -b $BRANCH https://github.com/atoma-network/atoma-node.git .
 
-# TODO: Remove this once the changes are merged
-git clone -b mc/build/testground-changes https://github.com/maschad/atoma-node.git .
