@@ -24,7 +24,7 @@ VALUES
 
 -- Insert initial balance if it doesn't exist
 INSERT INTO
-	balance (user_id, usdc_balance)
+	crypto_balances (user_id, usdc_balance)
 VALUES
 	(1, 10000000000000);
 
