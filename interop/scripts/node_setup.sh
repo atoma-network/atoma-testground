@@ -33,6 +33,7 @@ cd /opt/atoma
 
 # Clone your repository with the docker-compose files
 # Use the branch specified in the environment variable, defaulting to main if not set
-BRANCH=${NODE_BRANCH:-main}
+# BRANCH=${NODE_BRANCH:-main}
+BRANCH=mc/feat/integrate-sglang
 git clone -b $BRANCH https://github.com/atoma-network/atoma-node.git .
 
