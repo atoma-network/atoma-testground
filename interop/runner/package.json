@@ -8,7 +8,7 @@
     "concurrency": "tsx concurrency/index.ts"
   },
   "dependencies": {
-    "@mysten/sui": "^1.28.0",
+    "@mysten/sui": "^1.29.1",
     "axios": "^1.9.0",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3",
