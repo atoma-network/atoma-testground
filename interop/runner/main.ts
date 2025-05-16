@@ -24,9 +24,10 @@ async function runE2ETests() {
 		// Test chat completions
 		const chatResponse = await sdk.chat.create({
 			messages: [
-				{ role: "user", content: "What is the capital of Jamaica?" }
+				{ role: "user", content: "Explain the difference between a cat and a dog" }
 			],
-			model: "TinyLlama/TinyLlama-1.1B-Chat-v1.0"
+			model: "deepseek-ai/DeepSeek-V3-0324",
+			stream: false,
 		});
 
 		console.log("Chat response:", chatResponse.choices[0].message.content);

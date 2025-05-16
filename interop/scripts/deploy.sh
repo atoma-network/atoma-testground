@@ -4,10 +4,9 @@ set -e
 # Variables
 REGION="us-west-2"
 NODE_INSTANCE_TYPE="g4dn.2xlarge"  # GPU instance with NVIDIA T4 GPU for ML workloads
-# NODE_INSTANCE_TYPE="c5.2xlarge"  # CPU instance
 PROXY_INSTANCE_TYPE="c5.2xlarge"  # Sufficient for proxy
 AMI_ID="ami-03f8acd418785369b"  # Ubuntu 22.04 LTS
-KEY_NAME="atoma-key"
+KEY_NAME="${KEY_NAME:-atoma-key}"  # Use the environment variable if set, or default to "atoma-key"
 SECURITY_GROUP_NAME="atoma-sg"
 VPC_ID=$(aws ec2 describe-vpcs --query "Vpcs[0].VpcId" --output text)
 
@@ -118,6 +117,12 @@ awk -v proxy_ip="$PROXY_IP" '
 mv config.toml.tmp config.toml
 echo "Updated config.toml with PROXY_IP in bootstrap_node_addrs: $PROXY_IP"
 
+# Output information for GitHub actions
+# echo "NODE_IP=$NODE_IP" >> $GITHUB_ENV
+# echo "PROXY_IP=$PROXY_IP" >> $GITHUB_ENV
+# echo "NODE_INSTANCE_ID=$NODE_INSTANCE_ID" >> $GITHUB_ENV
+# echo "PROXY_INSTANCE_ID=$PROXY_INSTANCE_ID" >> $GITHUB_ENV
+
 # Wait a bit for the instances to be ready for SSH
 echo "Waiting for SSH to be available..."
 sleep 30
@@ -191,11 +196,38 @@ ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP 'cd /opt/atoma
 
 # Start the Atoma node with mistralrs-cpu and log the output
 echo "Starting Docker Compose..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64  && sudo -E COMPOSE_PROFILES=gpu,chat_completions_vllm docker compose -f docker-compose.dev.yaml up -d'
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$NODE_IP 'cd /opt/atoma && export PLATFORM=linux/amd64  && sudo -E COMPOSE_PROFILES=gpu,chat_completions_sglang docker compose -f docker-compose.dev.yaml up -d'
 
-# Wait for databases to be ready
-echo "Waiting for databases to be ready..."
-sleep 100
+# Wait for proxy service to be up and migrations to be complete
+echo "Waiting for proxy service and migrations..."
+max_attempts=60  # Increased max attempts to give more time
+for i in {1..60}; do
+  # First check if proxy container is running
+  proxy_status=$(ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker compose ps atoma-proxy-cloud --format json" 2>/dev/null)
+  echo "Proxy status: $proxy_status"
+
+  # Then check if database has the required tables
+  if echo "$proxy_status" | grep -q "running" && \
+    ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c '\d nodes' > /dev/null 2>&1" && \
+    ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c '\d crypto_balances' > /dev/null 2>&1" && \
+    ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c '\d api_tokens' > /dev/null 2>&1"; then
+    echo "✓ Proxy service is running and migrations are complete"
+    break
+  fi
+
+  if [ $i -eq $max_attempts ]; then
+    echo "WARNING: Maximum wait time reached. Proceeding anyway..."
+  fi
+
+  echo "Waiting for proxy service and migrations... attempt $i/$max_attempts"
+  sleep 30
+done
+
+# Verify the state before proceeding
+if ! ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c '\d nodes'" > /dev/null 2>&1; then
+  echo "ERROR: Database migrations did not complete successfully"
+  exit 1
+fi
 
 # First, create the functions
 echo "Creating database functions..."
@@ -203,10 +235,6 @@ ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma
 
 # Then, call the initialization function with the parameters
 echo "Initializing database with node IP and API token..."
-ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c \"SELECT initialize_database('$NODE_IP', '$ATOMA_API_KEY');\""
+ssh -o StrictHostKeyChecking=no -i $KEY_NAME.pem ubuntu@$PROXY_IP "cd /opt/atoma-proxy && sudo docker exec atoma-proxy-db-1 psql -U atoma -d atoma -c \"SELECT initialize_database('$NODE_IP', '$ATOMA_API_KEY');\" || echo 'Database initialization failed'"
 
-# Output information for GitHub actions
-# echo "NODE_IP=$NODE_IP" >> $GITHUB_ENV
-# echo "PROXY_IP=$PROXY_IP" >> $GITHUB_ENV
-# echo "NODE_INSTANCE_ID=$NODE_INSTANCE_ID" >> $GITHUB_ENV
-# echo "PROXY_INSTANCE_ID=$PROXY_INSTANCE_ID" >> $GITHUB_ENV
+echo "ATOMA_API_URL=http://$PROXY_IP:8080" >> $GITHUB_ENV

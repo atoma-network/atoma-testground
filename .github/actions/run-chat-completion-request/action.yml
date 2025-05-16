@@ -11,6 +11,33 @@ inputs:
   api_key:
     description: "API key for authentication"
     required: true
+  node_config:
+    description: "Node config toml file"
+    required: true
+  node_env:
+    description: "Node environment"
+    required: true
+  node_local_key:
+    description: "Node local key"
+    required: true
+  proxy_config:
+    description: "Config proxy toml file"
+    required: true
+  proxy_env:
+    description: "Proxy environment"
+    required: true
+  proxy_local_key:
+    description: "Proxy local key"
+    required: true
+  sui_aliases:
+    description: "Sui aliases"
+    required: true
+  sui_client_yaml:
+    description: "Sui client yaml file"
+    required: true
+  sui_keystore:
+    description: "Sui keystore"
+    required: true
   node_branch:
     description: "Branch to use for atoma-node repository"
     required: false
@@ -23,69 +50,91 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
-
-    - name: Create config files
-      shell: bash
-      working-directory: interop/scripts
-      env:
-        CONFIG_TOML: ${{ secrets.CONFIG_TOML }}
-        CONFIG_PROXY_TOML: ${{ secrets.CONFIG_PROXY_TOML }}
-        ENV_FILE: ${{ secrets.ENV_FILE }}
-        PROXY_ENV: ${{ secrets.PROXY_ENV }}
-        ATOMA_KEY_PEM: ${{ secrets.ATOMA_KEY_PEM }}
-        SUI_CLIENT_YAML: ${{ secrets.SUI_CLIENT_YAML }}
-        SUI_ALIASES_YAML: ${{ secrets.SUI_ALIASES_YAML }}
-        SUI_KEYSTORE: ${{ secrets.SUI_KEYSTORE }}
-        NODE_LOCAL_KEY: ${{ secrets.NODE_LOCAL_KEY }}
-        PROXY_LOCAL_KEY: ${{ secrets.PROXY_LOCAL_KEY }}
-        NODE_BRANCH: ${{ inputs.node_branch }}
-        PROXY_BRANCH: ${{ inputs.proxy_branch }}
-      run: |
-        chmod +x create_files.sh
-        ./create_files.sh
-
-    - name: Set up AWS CLI
+    - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v1
       with:
         aws-access-key-id: ${{ inputs.aws-access-key-id }}
         aws-secret-access-key: ${{ inputs.aws-secret-access-key }}
         aws-region: us-west-2
 
+    - name: Generate unique key pair
+      id: key-pair
+      shell: bash
+      working-directory: interop/scripts
+      run: |
+        # Generate a unique key name based on the GitHub run ID and workflow
+          KEY_NAME="atoma-key-${{ github.run_id }}"
+          echo "KEY_NAME=$KEY_NAME" >> $GITHUB_ENV
+          echo "KEY_NAME=$KEY_NAME" >> $GITHUB_OUTPUT
+
+         # Delete the key if it already exists (in case of previous runs)
+         aws ec2 delete-key-pair --key-name $KEY_NAME || true
+
+         # Create key pair and store private key
+         aws ec2 create-key-pair --key-name $KEY_NAME --query "KeyMaterial" --output text > $KEY_NAME.pem
+         chmod 400 $KEY_NAME.pem
+         echo "Key pair created: $KEY_NAME"
+
+    - name: Create config files
+      shell: bash
+      working-directory: interop/scripts
+      env:
+        NODE_CONFIG: ${{ inputs.NODE_CONFIG }}
+        NODE_ENV: ${{ inputs.NODE_ENV }}
+        NODE_LOCAL_KEY: ${{ inputs.NODE_LOCAL_KEY }}
+        PROXY_CONFIG: ${{ inputs.PROXY_CONFIG }}
+        PROXY_ENV: ${{ inputs.PROXY_ENV }}
+        SUI_ALIASES: ${{ inputs.SUI_ALIASES }}
+        SUI_CLIENT_YAML: ${{ inputs.SUI_CLIENT_YAML }}
+        SUI_KEYSTORE: ${{ inputs.SUI_KEYSTORE }}
+        PROXY_LOCAL_KEY: ${{ inputs.PROXY_LOCAL_KEY }}
+
+      run: |
+        chmod +x create_files.sh
+        ./create_files.sh
+
     - name: Make scripts executable
       shell: bash
       working-directory: interop/scripts
       run: |
-        chmod +x deploy.sh
-        chmod +x teardown.sh
-        chmod +x node_setup.sh
-        chmod +x proxy_setup.sh
-        chmod +x print_docker_logs.sh
+        chmod +x *.sh
 
     - name: Deploy infrastructure
+      id: deploy
       shell: bash
       working-directory: interop/scripts
-      run: ./deploy.sh
+      run: |
+        # Ensure the key is in the right place with right permissions
+        chmod 400 $KEY_NAME.pem
+
+        # Run deployment
+        ./deploy.sh
+
+        # Save instance IDs to environment variable for teardown
+        if [ -f instance_ids.txt ]; then
+          echo "INSTANCE_IDS=$(cat instance_ids.txt)" >> $GITHUB_ENV
+        fi
+      env:
+        ATOMA_API_KEY: ${{ inputs.api_key }}
+        NODE_BRANCH: ${{ inputs.node_branch }}
+        PROXY_BRANCH: ${{ inputs.proxy_branch }}
 
     - name: Setup Node.js
+      if: success() && steps.deploy.outcome == 'success'
       uses: actions/setup-node@v4
       with:
         node-version: "22.14.0"
         cache: "npm"
         cache-dependency-path: interop/runner/package-lock.json
 
-    - name: Build atoma-nodes
-      shell: bash
-      working-directory: interop/nodes
-      run: make
-
     - name: Install dependencies
+      if: success() && steps.deploy.outcome == 'success'
       shell: bash
       working-directory: interop/runner
       run: npm ci
 
-    - name: run e2e-test
+    - name: Run e2e-test
+      if: success() && steps.deploy.outcome == 'success'
       shell: bash
       env:
         ATOMA_API_KEY: ${{ inputs.api_key }}
@@ -97,17 +146,43 @@ runs:
       shell: bash
       working-directory: interop/scripts
       if: failure()
-      run: ./print_docker_logs.sh
+      run: |
+        if [ -f ./print_docker_logs.sh ]; then
+          chmod +x ./print_docker_logs.sh
+          ./print_docker_logs.sh || echo "Failed to collect Docker logs"
+        else
+          echo "print_docker_logs.sh script not found"
+        fi
 
     - name: Upload Docker logs as artifact
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       if: failure()
       with:
         name: docker-logs
         path: interop/scripts/docker_logs_*.zip
         retention-days: 7
+        if-no-files-found: warn
 
     - name: Teardown infrastructure
       shell: bash
       working-directory: interop/scripts
-      run: ./teardown.sh
+      if: always() # This ensures the step runs even if previous steps fail
+      run: |
+        chmod +x teardown.sh
+
+        # Make sure key is available with correct permissions
+        chmod 400 $KEY_NAME.pem
+
+        # Check if we have instance IDs stored, if not try to read from file
+        if [ -z "$INSTANCE_IDS" ] && [ -f instance_ids.txt ]; then
+          export INSTANCE_IDS=$(cat instance_ids.txt)
+        fi
+
+        # Run teardown script
+        ./teardown.sh
+
+        # Additional cleanup of AWS resources
+        if [ -n "$KEY_NAME" ]; then
+          echo "Deleting key pair $KEY_NAME..."
+          aws ec2 delete-key-pair --key-name $KEY_NAME || true
+        fi
