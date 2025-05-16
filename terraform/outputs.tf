@@ -22,3 +22,39 @@ output "grafana_endpoint" {
   description = "Endpoint for Grafana dashboard"
   value       = module.monitoring.grafana_endpoint
 }
+
+output "node_instance_id" {
+  description = "ID of the Atoma node instance"
+  value       = module.atoma.node_instance_id
+}
+
+output "proxy_instance_id" {
+  description = "ID of the Atoma proxy instance"
+  value       = module.atoma.proxy_instance_id
+}
+
+output "node_private_ip" {
+  description = "Private IP of the Atoma node instance"
+  value       = module.atoma.node_private_ip
+}
+
+output "proxy_private_ip" {
+  description = "Private IP of the Atoma proxy instance"
+  value       = module.atoma.proxy_private_ip
+}
+
+output "node_public_ip" {
+  description = "Public IP of the Atoma node instance"
+  value       = module.atoma.node_public_ip
+}
+
+output "proxy_public_ip" {
+  description = "Public IP of the Atoma proxy instance"
+  value       = module.atoma.proxy_public_ip
+}
+
+output "private_key" {
+  description = "Private key for SSH access"
+  value       = module.atoma.private_key
+  sensitive   = true
+}

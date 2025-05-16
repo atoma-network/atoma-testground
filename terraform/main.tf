@@ -10,44 +10,17 @@ module "networking" {
   public_subnets     = var.public_subnets
 }
 
-module "ecs" {
-  source = "./modules/ecs"
+module "atoma" {
+  source = "./modules/atoma"
 
-  environment     = var.environment
-  vpc_id          = module.networking.vpc_id
-  private_subnets = module.networking.private_subnet_ids
-  public_subnets  = module.networking.public_subnet_ids
-}
-
-module "monitoring" {
-  source = "./modules/monitoring"
-
-  environment     = var.environment
-  vpc_id          = module.networking.vpc_id
-  private_subnets = module.networking.private_subnet_ids
-}
-
-module "storage" {
-  source = "./modules/storage"
-
-  environment     = var.environment
-  vpc_id          = module.networking.vpc_id
-  private_subnets = module.networking.private_subnet_ids
-}
-
-# Example simplified Terraform configuration
-resource "aws_instance" "atoma_node" {
-  ami           = "ami-0c55b159cbfafe1f0" # Ubuntu 20.04 LTS
-  instance_type = "c6i.2xlarge"           # 8 vCPUs, 16 GiB memory
-  key_name      = aws_key_pair.deployer.key_name
-
-  # More configuration...
-}
-
-resource "aws_instance" "atoma_proxy" {
-  ami           = "ami-0c55b159cbfafe1f0" # Ubuntu 20.04 LTS
-  instance_type = "c5.xlarge"             # 4 vCPUs, 8 GiB memory
-  key_name      = aws_key_pair.deployer.key_name
-
-  # More configuration...
+  vpc_id              = module.networking.vpc_id
+  subnet_id           = module.networking.public_subnet_ids[0]
+  key_name            = var.key_name
+  ami_id              = var.ami_id
+  node_instance_type  = var.node_instance_type
+  proxy_instance_type = var.proxy_instance_type
+  deploy_node         = var.deploy_node
+  deploy_proxy        = var.deploy_proxy
+  node_branch         = var.node_branch
+  proxy_branch        = var.proxy_branch
 }

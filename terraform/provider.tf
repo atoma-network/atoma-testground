@@ -4,15 +4,14 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
-  }
-
-  # Optional: Configure backend for state storage
-  backend "s3" {
-    bucket         = "atoma-state-bucket"
-    key            = "atoma/terraform.tfstate"
-    region         = "us-west-2"
-    encrypt        = true
-    dynamodb_table = "terraform-state-lock" # Optional: for state locking
+    local = {
+      source  = "hashicorp/local"
+      version = "~> 2.0"
+    }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
   }
 }
 
